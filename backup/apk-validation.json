@@ -1,0 +1,12 @@
+{
+  "version": "3.0.43",
+  "bytes": 859692,
+  "sha256": "c2e2fb910b6771ce66bb7c6c17ea4193f258166504c89d9f2cf4591b119ffd56",
+  "assets": 84,
+  "mismatches": [],
+  "unexpected": [],
+  "suspectedSecrets": [],
+  "missingHtmlReferences": [],
+  "lintErrors": 0,
+  "lintWarnings": 3
+}

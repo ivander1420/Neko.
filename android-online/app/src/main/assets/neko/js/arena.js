@@ -1,0 +1,594 @@
+/* ============================================================
+   NEKO · js/arena.js
+   Arena game: pilih game, atur sesi, lalu mainkan delapan game
+   TJKT dalam lapisan layar penuh dengan tombol keluar.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  const Neko = window.Neko = window.Neko || {};
+  const { esc, clamp, formatNumber, wait, tone } = Neko.util;
+  const { icon } = Neko.icons;
+  const overlayRoot = document.getElementById('overlayRoot');
+
+  const catalog = [
+    {
+      id: 'quiz', name: 'Kuis Kilat', icon: 'brain', color: tone(0),
+      desc: 'Jawab soal TJKT pilihan ganda sebelum waktu habis. Setiap jawaban benar menambah skor dan XP.',
+      tags: ['TJKT', 'Pilihan ganda'], players: 1, roundLabel: 'Jumlah soal', rounds: [5, 8, 12], defaults: 8
+    },
+    {
+      id: 'spy', name: 'Who Is The Spy', icon: 'spy', color: tone(1),
+      desc: 'Satu pemain mendapat kata berbeda. Beri petunjuk, diskusikan, lalu temukan penyusupnya.',
+      tags: ['Sosial', '3–8 pemain'], players: 8, minPlayers: 3, roundLabel: 'Putaran', rounds: [1, 2, 3], defaults: 1
+    },
+    {
+      id: 'spy-v2', name: 'Who Is The Spy 2.0', icon: 'voice', color: tone(1),
+      desc: 'Mode baru dengan input suara/chat bergiliran. Lebih seru dan interaktif!',
+      tags: ['Mabar', 'Sosial', 'Suara', '3-8 pemain'], players: 8, minPlayers: 3, roundLabel: 'Putaran', rounds: [1, 2, 3], defaults: 1, mabarOnly: true
+    },
+    {
+      id: 'cable', name: 'Lab Kabel', icon: 'cable', color: tone(2),
+      desc: 'Pasangkan kabel, konektor, dan fungsinya ke slot yang tepat. Cocok untuk hafalan praktik.',
+      tags: ['Praktik', 'Pasangkan'], players: 1, roundLabel: 'Papan', rounds: [1, 2, 3], defaults: 2
+    },
+    {
+      id: 'memory', name: 'Kartu Memori', icon: 'memory', color: tone(3),
+      desc: 'Balik kartu dan temukan pasangan istilah dengan definisinya. Latih ingatan istilah jaringan.',
+      tags: ['Memori', 'Istilah'], players: 1, roundLabel: 'Jumlah pasangan', rounds: [6, 8, 10], defaults: 8
+    },
+    {
+      id: 'subnet', name: 'Subnet Master', icon: 'calc', color: tone(4),
+      desc: 'Hitung network address, broadcast, dan jumlah host dari IP dan prefix. Otak subnetmu diuji.',
+      tags: ['Hitung', 'IP'], players: 1, roundLabel: 'Jumlah soal', rounds: [5, 8, 10], defaults: 8
+    },
+    {
+      id: 'osi', name: 'Menara OSI', icon: 'layers', color: tone(5),
+      desc: 'Susun tujuh lapisan OSI dari Application sampai Physical. Satu kesalahan menggeser semuanya.',
+      tags: ['OSI', 'Urutan'], players: 1, roundLabel: 'Menara', rounds: [1, 2, 3], defaults: 2
+    },
+    {
+      id: 'detective', name: 'Detektif Jaringan', icon: 'detective', color: tone(6),
+      desc: 'Buka petunjuk kasus, hubungkan gejala, lalu pilih penyebab gangguan yang paling tepat.',
+      tags: ['Kasus', 'Troubleshooting'], players: 1, roundLabel: 'Kasus', rounds: [3, 4, 5], defaults: 3
+    },
+    {
+      id: 'reaction', name: 'Refleks Neko', icon: 'bolt', color: tone(7),
+      desc: 'Tunggu sinyal berubah, lalu sentuh secepat mungkin. Fokus dan kecepatan tangan diuji.',
+      tags: ['Refleks', 'Kilat'], players: 1, roundLabel: 'Percobaan', rounds: [5, 7, 10], defaults: 5
+    },
+    {
+      id: 'simon', name: 'Simon Router', icon: 'router', color: tone(0),
+      desc: 'Lampu port menyala berurutan. Hafal urutannya, lalu tekan ulang persis sama.',
+      tags: ['Ingatan', 'Urutan port'], players: 1, roundLabel: 'Ronde', rounds: [4, 5, 7], defaults: 5
+    },
+    {
+      id: 'portrush', name: 'Serang Port', icon: 'crosshair', color: tone(2),
+      desc: 'Port muncul di papan switch. Sentuh hanya port layanan yang diminta, abaikan yang palsu.',
+      tags: ['Refleks', 'Port layanan'], players: 1, roundLabel: 'Ronde', rounds: [5, 6, 8], defaults: 6
+    },
+    {
+      id: 'merge', name: 'Subnet 2048', icon: 'grid', color: tone(4),
+      desc: 'Geser papan, gabungkan prefix yang sama sampai jaringan melebar ke target yang ditentukan.',
+      tags: ['Gabung', 'Prefix'], players: 1, roundLabel: 'Target', rounds: [6, 8, 10], defaults: 8
+    },
+    {
+      id: 'networksnake', name: 'Snake Jaringan', icon: 'network', color: tone(2),
+      desc: 'Kendalikan paket data, makan node, hindari tabrakan. Refleks dan strategi murni.',
+      tags: ['Refleks', 'Arcade'], players: 1, roundLabel: 'Panjang', rounds: [1], defaults: 1
+    },
+    {
+      id: 'blockdrop', name: 'Blok Jatuh', icon: 'grid', color: tone(5),
+      desc: 'Susun balok, bersihkan baris penuh, bertahan sebelum papan meluap.',
+      tags: ['Puzzle', 'Strategi'], players: 1, roundLabel: 'Ronde', rounds: [1], defaults: 1
+    },
+    {
+      id: 'bubblepop', name: 'Bubble Pop', icon: 'sparkle', color: tone(7),
+      desc: 'Pecah gelembung sebelum lewat. Makin lama makin cepat — refleks murni.',
+      tags: ['Refleks', 'Kilat'], players: 1, roundLabel: 'Gelembung', rounds: [30], defaults: 30
+    },
+    {
+      id: 'typing', name: 'Terminal Kilat', icon: 'keyboard', color: tone(6),
+      desc: 'Ketik perintah Cisco IOS persis seperti tertulis. Semakin cepat, semakin besar poinnya.',
+      tags: ['Cisco', 'Mengetik'], players: 1, roundLabel: 'Perintah', rounds: [5, 6, 10], defaults: 6
+    },
+    {
+      id: 'netquest', name: 'Petualangan Jaringan', icon: 'network', color: tone(3),
+      desc: 'Koleksi 50 game mini bertema jaringan: tebak IP, susun kabel, ketik perintah, dan refleks paket. Bukan kuis — benar-benar game.',
+      tags: ['50 game', 'Jaringan', 'Campuran'], players: 1, roundLabel: 'Jumlah game', rounds: [6, 8, 12], defaults: 8
+    },
+    {
+      id: 'stack', name: 'Menara Server', icon: 'server', color: '#22d3ee',
+      desc: 'Tumpuk blok server jadi menara setinggi target. Blok meleset? Terpotong! Pas sempurna dapat combo.',
+      tags: ["Arcade","Presisi"], players: 1, roundLabel: 'Target menara', rounds: [10,15,20], defaults: 15
+    },
+    {
+      id: 'knife', name: 'Tancap Konektor', icon: 'cable', color: '#f59e0b',
+      desc: 'Lempar konektor ke router yang berputar. Hindari konektor yang sudah menancap — tamat setiap stage.',
+      tags: ["Arcade","Timing"], players: 1, roundLabel: 'Target stage', rounds: [3,5,7], defaults: 5
+    },
+    {
+      id: 'doodle', name: 'Lompat Awan', icon: 'cloud', color: '#a3e635',
+      desc: 'Paket imut memantul dari awan ke awan. Arahkan kiri-kanan, pijak platform, panjat sampai target.',
+      tags: ["Arcade","Platform"], players: 1, roundLabel: 'Target (meter)', rounds: [150,300,500], defaults: 300
+    },
+    {
+      id: 'slice', name: 'Tebas Kabel', icon: 'crosshair', color: '#fb7185',
+      desc: 'Tebas perangkat jaringan yang melayang dengan sapuan. Hindari bom, jangan lewatkan 3 perangkat.',
+      tags: ["Arcade","Swipe"], players: 1, roundLabel: 'Target poin', rounds: [200,400,600], defaults: 400
+    },
+    {
+      id: 'breakout', name: 'Pantul Brick', icon: 'grid', color: '#a78bfa',
+      desc: 'Pantulkan paket data dengan router, hancurkan semua brick server. Tiga nyawa, makin lama makin cepat.',
+      tags: ["Arcade","Klasik"], players: 1, roundLabel: 'Target brick', rounds: [40], defaults: 40
+    },
+    {
+      id: 'colorswitch', name: 'Gerbang Warna', icon: 'sparkle', color: '#38bdf8',
+      desc: 'Lompat melewati cincin warna berputar. Hanya warna yang cocok boleh lewat — salah warna, tamat!',
+      tags: ["Arcade","Warna"], players: 1, roundLabel: 'Target gerbang', rounds: [8,12,18], defaults: 12
+    },
+    {
+      id: 'piano', name: 'Tuts Piano', icon: 'keyboard', color: '#2dd4bf',
+      desc: 'Tuts jaringan berjatuhan makin cepat. Ketuk tepat di garis untuk memainkannya — meleset satu saja, tamat.',
+      tags: ["Arcade","Ritme"], players: 1, roundLabel: 'Target tuts', rounds: [30,50,80], defaults: 50
+    },
+    {
+      id: 'shooter', name: 'Tembak Virus', icon: 'rocket', color: '#fb923c',
+      desc: 'Terbangkan router, basmi gelombang virus yang turun. Tiga nyawa — jangan biarkan virus lolos!',
+      tags: ["Arcade","Tembak"], players: 1, roundLabel: 'Target virus', rounds: [20,35,50], defaults: 35
+    },
+    {
+      id: 'mines', name: 'Ranjau Jaringan', icon: 'shield', color: '#22d3ee',
+      desc: 'Buka semua node aman tanpa menyentuh virus tersembunyi. Angka = jumlah virus di sekitar. Tandai dengan bendera.',
+      tags: ["Puzzle","Logika"], players: 1, roundLabel: 'Jumlah virus', rounds: [8,12,18], defaults: 12
+    },
+    {
+      id: 'pipe', name: 'Sambung Pipa', icon: 'cable', color: '#38bdf8',
+      desc: 'Putar potongan pipa untuk mengalirkan data dari sumber ke tujuan. Klik untuk memutar 90 derajat.',
+      tags: ["Puzzle","Jalur"], players: 1, roundLabel: 'Ukuran papan', rounds: [5,6,7], defaults: 6
+    },
+    {
+      id: 'sort', name: 'Sortir Bola', icon: 'dice', color: '#a78bfa',
+      desc: 'Tuang bola antar tabung sampai tiap tabung berisi satu warna. Rencanakan langkahmu — dua tabung kosong membantumu.',
+      tags: ["Puzzle","Sortir"], players: 1, roundLabel: 'Jumlah warna', rounds: [4,5,6], defaults: 5
+    },
+    {
+      id: 'match3', name: 'Cocok Tiga', icon: 'sparkle', color: '#fb7185',
+      desc: 'Tukar permata bersebelahan untuk membuat baris 3 atau lebih. Rantai kombo meledak — kejar target skor sebelum langkah habis.',
+      tags: ["Puzzle","Cocokkan"], players: 1, roundLabel: 'Target skor', rounds: [600,1000,1500], defaults: 1000
+    },
+    {
+      id: 'lights', name: 'Padam Lampu', icon: 'bolt', color: '#facc15',
+      desc: 'Matikan semua LED router. Menekan satu lampu membalik lampu itu dan tetangganya — temukan pola tepat.',
+      tags: ["Puzzle","Logika"], players: 1, roundLabel: 'Ukuran papan', rounds: [4,5,6], defaults: 5
+    },
+    {
+      id: 'gomoku', name: 'Lima Sejajar', icon: 'swords', color: '#a3e635',
+      desc: 'Adu strategi melawan AI: buat lima batu berurutan sebelum lawan. Serang dan bertahan sekaligus.',
+      tags: ["Strategi","vs AI"], players: 1, roundLabel: 'Ukuran papan', rounds: [10,12,14], defaults: 12
+    },
+  ];
+
+  const difficulty = {
+    santai: { label: 'Santai', sub: 'Waktu longgar', limit: 26, bonus: .8 },
+    normal: { label: 'Normal', sub: 'Tempo seimbang', limit: 18, bonus: 1 },
+    tantangan: { label: 'Tantangan', sub: 'Waktu ketat', limit: 11, bonus: 1.3 }
+  };
+
+  let active = null;
+
+  function meta(id) {
+    return catalog.find(item => item.id === id) || catalog[0];
+  }
+
+  function bestOf(id) {
+    const entry = Neko.store.profile?.stats?.games?.[id];
+    return entry && entry.best ? entry.best : 0;
+  }
+
+  function render() {
+    const profile = Neko.store.profile;
+    const played = profile?.stats?.gamesPlayed || 0;
+    const totalBest = catalog.reduce((sum, item) => sum + bestOf(item.id), 0);
+    const gameCount = catalog.filter(item => item.id !== 'spy-v2').length;
+    return (
+      '<section class="arena-hero">' + (Neko.ornaments ? Neko.ornaments.cluster('arena') : '') +
+      '<div class="arena-hero-copy"><span class="kicker">GAME TJKT</span>' +
+      '<h1>Pilih game, atur sesi, lalu buktikan ilmumu.</h1>' +
+      '<p>' + gameCount + ' mode latihan seru — tiap game beda mekanik, plus Kelas Langsung online antarperangkat. Pilih kartu untuk melihat pengaturan sebelum mulai.</p>' +
+      '<div class="arena-mode"><span class="chip">' + icon('gamepad') + gameCount + ' game + live</span><span class="chip">' + icon('users') + 'Mode bergiliran</span><span class="chip">' + icon('bolt') + 'XP tiap sesi</span></div>' +
+      '<div class="home-meta" style="margin-top:16px"><span class="chip">' + icon('trophy') + 'Total rekor ' + formatNumber(totalBest) + '</span><span class="chip">' + icon('target') + played + ' sesi dimainkan</span></div>' +
+      '</div>' +
+      '<div class="arena-hero-visual" aria-hidden="true"><div class="arena-orbit">' +
+      '<div class="arena-core">' + icon('gamepad') + '</div>' +
+      '<span class="arena-orbit-dot d1">' + icon('brain') + '</span>' +
+      '<span class="arena-orbit-dot d2">' + icon('spy') + '</span>' +
+      '<span class="arena-orbit-dot d3">' + icon('calc') + '</span>' +
+      '<span class="arena-orbit-dot d4">' + icon('bolt') + '</span>' +
+      '</div></div></section>' +
+      '<button type="button" class="live-class-banner" data-live-open>' +
+      '<span class="live-class-ic">' + icon('live') + '</span>' +
+      '<span class="live-class-copy"><b>NEKO LIVE CLASS</b><small>Guru menampilkan PIN, semua siswa menjawab dari HP masing-masing. Skor cepat + benar, papan peringkat live, XP masuk akun.</small></span>' +
+      '<span class="live-class-chips"><i>Pin 6 digit</i><i>Online</i><i>1 layar + banyak HP</i></span>' +
+      '<span class="live-class-go">' + icon('play') + 'Buka</span>' +
+      '</button>' +
+      '<div class="arena-grid">' + catalog.filter(item => item.id !== 'spy-v2').map(gameCard).join('') + '</div>' +
+      '<section class="arena-spy-banner">' +
+      '<button type="button" class="live-class-banner" data-go="mabar">' +
+      '<span class="live-class-ic">' + icon('spy') + '</span>' +
+      '<span class="live-class-copy"><b>WHO IS THE SPY</b><small>Mode 2.0 bergiliran dengan chat & suara. Buka di halaman Mabar, undang teman yang saling add, lalu mainkan bareng.</small></span>' +
+      '<span class="live-class-chips"><i>Mabar</i><i>Giliran</i><i>Suara</i></span>' +
+      '<span class="live-class-go">' + icon('play') + 'Buka di Mabar</span>' +
+      '</button></section>'
+    );
+  }
+
+  function gameCard(item) {
+    const best = bestOf(item.id);
+    const label = item.id === 'spy-v2' ? 'Who Is The Spy' : item.name;
+    return (
+      '<button type="button" class="game-card" data-game="' + item.id + '" style="--gc:' + item.color + '">' +
+      '<span class="game-card-top"><span class="game-icon">' + icon(item.icon) + '</span><span class="game-best">' + (best ? 'Rekor ' + formatNumber(best) : 'Belum dimainkan') + '</span></span>' +
+      '<h3>' + esc(label) + '</h3><p>' + esc(item.desc) + '</p>' +
+      '<span class="game-tags">' + item.tags.map(tag => '<span>' + esc(tag) + '</span>').join('') + '</span>' +
+      '<span class="game-card-foot"><span class="game-play">' + icon('play') + 'Atur & main</span><span class="game-best">' + item.defaults + ' ' + item.roundLabel.toLowerCase() + ' awal</span></span>' +
+      '</button>'
+    );
+  }
+
+  function bind(root) {
+    root.addEventListener('click', event => {
+      if (event.target.closest('[data-live-open]')) {
+        Neko.audio.play('select');
+        if (Neko.live) Neko.live.openChooser();
+        return;
+      }
+      const card = event.target.closest('[data-game]');
+      if (card) {
+        Neko.audio.play('select');
+        setupSheet(card.dataset.game);
+      }
+    });
+  }
+
+  function setupSheet(gameId) {
+    const item = meta(gameId);
+    let rounds = item.defaults;
+    let players = item.minPlayers || 1;
+    let level = 'normal';
+    const body =
+      '<div class="game-setup-head"><span class="game-icon" style="--gc:' + item.color + '">' + icon(item.icon) + '</span><div><h3>' + esc(item.name) + '</h3><p>' + esc(item.desc) + '</p></div></div>' +
+      '<div class="setup-grid">' +
+      '<section class="setup-section"><span class="setup-label">Tingkat kesulitan</span><div class="setup-choice" data-level>' +
+      Object.entries(difficulty).map(([key, value]) => '<button type="button" class="' + (key === level ? 'on' : '') + '" data-level-pick="' + key + '">' + value.label + '<small>' + value.sub + '</small></button>').join('') +
+      '</div></section>' +
+      '<section class="setup-section"><span class="setup-label">' + esc(item.roundLabel) + '</span><div class="setup-choice" data-rounds>' +
+      item.rounds.map(value => '<button type="button" class="' + (value === rounds ? 'on' : '') + '" data-round-pick="' + value + '">' + value + '<small>pilihan</small></button>').join('') +
+      '</div></section>' +
+      '</div>' +
+      (item.players > 1 ? '<section class="setup-section"><span class="setup-label">Pemain</span><div class="setup-players"><div class="setting-copy"><b>Jumlah pemain</b><small>Bergiliran di satu perangkat</small></div><div class="stepper"><button type="button" data-player-down aria-label="Kurangi pemain">−</button><b data-player-count>' + players + ' pemain</b><button type="button" data-player-up aria-label="Tambah pemain">+</button></div></div></section>' : '') +
+      '<div class="setup-note">' + icon('info') + '<span>Butuh fokus? Tekan tombol keluar kapan saja. Keluar dari game akan mengakhiri sesi dan permainan dimulai dari awal.</span></div>';
+    const entry = Neko.ui.sheet({
+      kicker: 'PENGATURAN GAME', title: item.name, sub: item.tags.join(' · '),
+      className: 'game-setup-sheet',
+      body,
+      foot: '<button type="button" class="btn btn-soft" data-sheet-close>Batal</button><button type="button" class="btn btn-primary" data-start-game style="--gc:' + item.color + '">' + icon('play') + 'Mulai sekarang</button>',
+      onMount(el) {
+        const count = el.querySelector('[data-player-count]');
+        el.querySelector('[data-level]').addEventListener('click', event => {
+          const button = event.target.closest('[data-level-pick]');
+          if (!button) return;
+          level = button.dataset.levelPick;
+          el.querySelectorAll('[data-level-pick]').forEach(node => node.classList.toggle('on', node === button));
+          Neko.audio.play('select');
+        });
+        el.querySelector('[data-rounds]').addEventListener('click', event => {
+          const button = event.target.closest('[data-round-pick]');
+          if (!button) return;
+          rounds = Number(button.dataset.roundPick);
+          el.querySelectorAll('[data-round-pick]').forEach(node => node.classList.toggle('on', node === button));
+          Neko.audio.play('select');
+        });
+        const setPlayers = value => {
+          players = clamp(value, item.minPlayers || 1, item.players);
+          if (count) count.textContent = players + ' pemain';
+          Neko.audio.play('tap');
+        };
+        const up = el.querySelector('[data-player-up]');
+        const down = el.querySelector('[data-player-down]');
+        if (up) up.addEventListener('click', () => setPlayers(players + 1));
+        if (down) down.addEventListener('click', () => setPlayers(players - 1));
+        el.querySelector('[data-start-game]').addEventListener('click', () => {
+          entry.close();
+          window.setTimeout(() => start(item.id, { rounds, players, level }), 240);
+        });
+      }
+    });
+  }
+
+  /* ---------------- Lapisan game ---------------- */
+
+  function start(gameId, config) {
+    const item = meta(gameId);
+    if (!Neko.games || !Neko.games[gameId]) {
+      Neko.ui.toast('Game belum siap', 'Modul game ini belum termuat.', 'error', 'warning');
+      return;
+    }
+    closeConfirmSheets();
+    const layer = document.createElement('div');
+    layer.className = 'game-layer';
+    layer.style.setProperty('--gc', item.color);
+    layer.innerHTML =
+      '<div class="game-bar">' +
+      '<button type="button" class="game-exit" data-game-exit aria-label="Keluar dari game">' + icon('exit') + '<span>Keluar</span></button>' +
+      '<div class="game-title-wrap"><span class="game-icon">' + icon(item.icon) + '</span><div><b>' + esc(item.name) + '</b><small data-game-sub>' + esc(difficulty[config.level]?.label || 'Normal') + '</small></div></div>' +
+      '<div class="spacer"></div><div class="game-hud" data-game-hud></div>' +
+      '</div>' +
+      '<div class="game-stage"><div class="game-frame"></div></div>';
+    document.body.appendChild(layer);
+    document.body.style.overflow = 'hidden';
+    if (overlayRoot) overlayRoot.classList.add('game-active');
+    window.requestAnimationFrame(() => layer.classList.add('is-open'));
+    Neko.audio.play('go');
+
+    const ctx = buildContext(item, layer, config);
+    active = ctx;
+    try {
+      Neko.games[gameId].mount(ctx);
+    } catch (error) {
+      ctx.setStage('<div class="g-panel g-center"><span class="g-center-icon">' + icon('warning') + '</span><h2>Game gagal dimuat</h2><p>' + esc(error.message) + '</p></div>');
+    }
+  }
+
+  function closeConfirmSheets() {
+    document.querySelectorAll('.modal-layer.game-exit-layer').forEach(node => node.remove());
+  }
+
+  function buildContext(item, layer, config) {
+    const stage = layer.querySelector('.game-stage');
+    const frame = layer.querySelector('.game-frame');
+    const hud = layer.querySelector('[data-game-hud]');
+    const sub = layer.querySelector('[data-game-sub]');
+    const cleanups = [];
+    let hudCache = [];
+    let ended = false;
+    let exiting = false;
+
+    const ctx = {
+      id: item.id,
+      meta: item,
+      config,
+      sessionId: item.id + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6),
+      difficulty: difficulty[config.level] || difficulty.normal,
+      layer,
+      stage,
+      frame,
+      audio: Neko.audio,
+      util: Neko.util,
+      store: Neko.store,
+      get ended() { return ended; },
+      setStage(html, wide = false) {
+        stage.classList.toggle('wide', Boolean(wide));
+        frame.innerHTML = html;
+        return frame;
+      },
+      setHUD(items) {
+        if (!hud) return;
+        const list = items || [];
+        hud.innerHTML = list.map(pill => '<span class="game-hud-pill ' + (pill.hot ? 'hot' : '') + '">' + (pill.icon ? icon(pill.icon) : '') + esc(pill.label) + '</span>').join('');
+        Array.from(hud.children).forEach((pill, index) => {
+          if (hudCache[index] !== undefined && hudCache[index] !== list[index].label) {
+            pill.classList.add('bump');
+            pill.addEventListener('animationend', () => pill.classList.remove('bump'), { once: true });
+          }
+        });
+        hudCache = list.map(pill => pill.label);
+      },
+      setSub(text) {
+        if (sub) sub.textContent = text;
+      },
+      cleanup(fn) {
+        if (typeof fn === 'function') cleanups.push(fn);
+      },
+      confetti(x, y, amount) {
+        Neko.ui.confetti(x ?? window.innerWidth / 2, y ?? window.innerHeight / 2, amount || 34);
+      },
+      toast: Neko.ui.toast,
+      async countdown(seconds = 3, brief = {}) {
+        // Tanpa hitung mundur: pemain diberi waktu persiapan dan memulai saat siap.
+        const mascot =
+          '<svg viewBox="0 0 120 92" aria-hidden="true">' +
+          '<line class="rm-ant" x1="36" y1="32" x2="27" y2="12"/><circle class="rm-tip" cx="26" cy="10" r="4.5"/>' +
+          '<line class="rm-ant" x1="84" y1="32" x2="93" y2="12"/><circle class="rm-tip t2" cx="94" cy="10" r="4.5"/>' +
+          '<rect class="rm-body" x="16" y="30" width="88" height="46" rx="15"/>' +
+          '<circle class="rm-eye" cx="47" cy="46" r="4.4"/><circle class="rm-eye" cx="73" cy="46" r="4.4"/>' +
+          '<path class="rm-mouth" d="M52 54q8 7 16 0"/>' +
+          '<rect class="rm-port" x="26" y="63" width="12" height="8" rx="2.5"/><rect class="rm-port" x="42" y="63" width="12" height="8" rx="2.5"/>' +
+          '<rect class="rm-port" x="58" y="63" width="12" height="8" rx="2.5"/><rect class="rm-port" x="74" y="63" width="12" height="8" rx="2.5"/>' +
+          '<circle class="rm-led l1" cx="32" cy="59.5" r="1.8"/><circle class="rm-led l2" cx="48" cy="59.5" r="1.8"/>' +
+          '<circle class="rm-led l3" cx="64" cy="59.5" r="1.8"/><circle class="rm-led l4" cx="80" cy="59.5" r="1.8"/>' +
+          '<rect class="rm-foot" x="30" y="76" width="14" height="6" rx="3"/><rect class="rm-foot" x="76" y="76" width="14" height="6" rx="3"/>' +
+          '</svg>';
+        const box = document.createElement('div');
+        box.className = 'g-ready';
+        box.style.setProperty('--gc', item.color || '#22d3ee');
+        box.innerHTML =
+          '<div class="g-ready-mascot">' + mascot + '</div>' +
+          '<span class="g-ready-kicker">' + icon('wifi') + 'SIAP MENGHUBUNGKAN?</span>' +
+          '<h2>' + esc(brief.title || item.name) + '</h2>' +
+          '<p class="g-ready-desc">' + esc(brief.objective || item.desc || '') + '</p>' +
+          (brief.hint ? '<div class="g-ready-hint">' + icon('info') + '<span>' + esc(brief.hint) + '</span></div>' : '') +
+          '<div class="g-ready-chips"><span class="chip">' + icon('shield') + esc((difficulty[config.level] || {}).label || 'Normal') + '</span><span class="chip">' + icon('heart') + 'Tanpa timer, santai dulu</span></div>' +
+          '<button type="button" class="btn btn-primary g-ready-start" data-ready-go>' + icon('play') + 'Mulai — saya siap</button>' +
+          '<small class="g-ready-note">Tidak ada hitung mundur. Permainan baru berjalan setelah kamu menekan Mulai.</small>';
+        frame.innerHTML = '';
+        frame.appendChild(box);
+        ctx.setHUD([]);
+        await new Promise(resolve => {
+          const button = box.querySelector('[data-ready-go]');
+          let started = false;
+          const removeListeners = () => {
+            button.removeEventListener('click', done);
+            document.removeEventListener('keydown', onKey);
+          };
+          const done = () => {
+            if (started || ended || exiting || Neko.ui.openCount || !box.isConnected) return;
+            started = true;
+            button.disabled = true;
+            removeListeners();
+            Neko.audio.play('go');
+            resolve();
+          };
+          const onKey = event => {
+            if (event.repeat || event.isComposing || event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+            if (event.target.closest('button') && event.target !== button) return;
+            if (event.code === 'Space' || event.code === 'Enter') { event.preventDefault(); done(); }
+          };
+          button.addEventListener('click', done);
+          document.addEventListener('keydown', onKey);
+          cleanups.push(removeListeners);
+        });
+      },
+      pass(titleText, name, hint) {
+        return new Promise(resolve => {
+          const box = document.createElement('div');
+          box.className = 'g-pass';
+          box.innerHTML =
+            '<div class="g-pass-avatar">' + esc(Neko.util.initials(name)) + '</div>' +
+            '<h2>' + titleText + '</h2>' +
+            '<p class="pass-hint">' + esc(hint || '') + '</p>' +
+            '<button type="button" class="btn btn-primary" data-pass-ok>' + icon('eye') + 'Saya siap</button>';
+          frame.innerHTML = '';
+          frame.appendChild(box);
+          box.querySelector('[data-pass-ok]').addEventListener('click', () => {
+            Neko.audio.play('select');
+            resolve();
+          });
+        });
+      },
+      finish(result) {
+        if (ended) return;
+        ended = true;
+        cleanups.forEach(fn => { try { fn(); } catch (error) { /* abaikan */ } });
+        showResult(ctx, item, result);
+      },
+      exit() {
+        if (exiting) return;
+        if (ended) { closeGame(); return; }
+        exiting = true;
+        const entry = Neko.ui.sheet({
+          layerClass: 'game-exit-layer',
+          kicker: 'KELUAR DARI GAME',
+          title: 'Sudahi sesi ini?',
+          body:
+            '<div class="exit-pop"><span class="exit-pop-icon">' + icon('exit') + '</span>' +
+            '<h3>Permainan sedang berjalan</h3>' +
+            '<p>Kamu bisa lanjut bermain, atau mengakhiri sesi sekarang.</p>' +
+            '<div class="exit-pop-warning">Keluar sekarang akan mengakhiri permainan. Jika ingin bermain lagi, game akan dimulai dari awal.</div></div>',
+          foot: '<button type="button" class="btn btn-soft" data-keep-playing>' + icon('play') + 'Lanjutkan main</button><button type="button" class="btn btn-danger" data-end-game>' + icon('close') + 'Sudahi & keluar</button>',
+          onMount(el) {
+            el.querySelector('[data-keep-playing]').addEventListener('click', () => { exiting = false; entry.close(); });
+            el.querySelector('[data-end-game]').addEventListener('click', () => { entry.close(); exiting = false; closeGame(); });
+          },
+          onClose() {
+            exiting = false;
+          }
+        });
+      }
+    };
+
+    function closeGame() {
+      if (!layer.isConnected) return;
+      ended = true;
+      cleanups.forEach(fn => { try { fn(); } catch (error) { /* abaikan */ } });
+      if (overlayRoot) overlayRoot.classList.remove('game-active');
+      layer.classList.add('is-closing');
+      layer.classList.remove('is-open');
+      document.body.style.overflow = '';
+      active = null;
+      Neko.audio.play('tap');
+      const finished = ctx.lastResult;
+      window.setTimeout(() => {
+        layer.remove();
+        if (finished) {
+          document.dispatchEvent(new CustomEvent('neko:game-result', { detail: finished }));
+        }
+        if (Neko.app) Neko.app.refresh();
+      }, 320);
+    }
+
+    ctx.close = closeGame;
+
+    layer.querySelector('[data-game-exit]').addEventListener('click', () => ctx.exit());
+    const escHandler = event => {
+      if (event.key !== 'Escape') return;
+      if (Neko.ui.openCount) return;
+      event.preventDefault();
+      ctx.exit();
+    };
+    document.addEventListener('keydown', escHandler);
+    cleanups.push(() => document.removeEventListener('keydown', escHandler));
+
+    layer.addEventListener('click', event => {
+      if (event.target.closest('[data-replay]')) {
+        closeGame();
+        window.setTimeout(() => start(item.id, config), 260);
+      }
+      if (event.target.closest('[data-menu]')) closeGame();
+    });
+
+    return ctx;
+  }
+
+  function showResult(ctx, item, result = {}) {
+    const score = Math.max(0, Math.round(result.score || 0));
+    const won = Boolean(result.won);
+    const xp = Math.max(0, Math.round(result.xp ?? 0));
+    Neko.store.recordGame(item.id, {
+      score, won,
+      correct: result.correct,
+      answered: result.answered,
+      minutes: result.minutes
+    });
+    if (xp) Neko.store.awardXP(xp, item.name);
+    Neko.audio.play(won ? 'win' : 'fail');
+    if (won) window.setTimeout(() => ctx.confetti(window.innerWidth / 2, window.innerHeight * .36, 40), 180);
+    const stats = (result.stats || []).map(stat => '<div class="g-result-stat"><strong>' + esc(stat.value) + '</strong><span>' + esc(stat.label) + '</span></div>').join('');
+    const list = result.list && result.list.length
+      ? '<div class="g-result-list">' + result.list.map((row, index) => '<div class="g-result-row ' + (row.win ? 'win' : '') + '"><span class="rank">' + (index + 1) + '</span><b>' + esc(row.name) + '</b><span class="score">' + formatNumber(row.score) + '</span></div>').join('') + '</div>'
+      : '';
+    ctx.setStage(
+      '<div class="g-panel g-result">' +
+      '<span class="g-result-medal">' + icon(won ? 'trophy' : 'medal') + '</span>' +
+      '<h2>' + esc(result.title || (won ? 'Hebat, kamu menang!' : 'Sesi selesai')) + '</h2>' +
+      '<p>' + esc(result.message || 'Terus berlatih agar makin cepat dan tepat.') + '</p>' +
+      (xp ? '<span class="g-xp-earned">' + icon('xp') + '+' + xp + ' XP diperoleh</span>' : '') +
+      '<div class="g-result-stats">' + stats + '</div>' +
+      list +
+      '<div class="g-result-actions"><button type="button" class="btn btn-primary" data-replay>' + icon('restart') + 'Main lagi</button><button type="button" class="btn btn-soft" data-menu>' + icon('grid') + 'Pilih game lain</button></div>' +
+      '</div>'
+    );
+    ctx.lastResult = { id: item.id, name: item.name, won, score, xp, title: result.title || '' };
+    // modul room mabar memakai event ini untuk mengirim skor ke server
+    document.dispatchEvent(new CustomEvent('neko:game-score', {
+      detail: { ...ctx.lastResult, stats: result.stats || [], sessionId: ctx.sessionId || '' }
+    }));
+    if (Neko.app) Neko.app.refresh();
+  }
+
+  function quickStart(gameId) {
+    if (!Neko.store.profile) return;
+    setupSheet(gameId);
+  }
+
+  Neko.arena = {
+    list: catalog,
+    meta,
+    render,
+    bind,
+    setupSheet,
+    quickStart,
+    start,
+    get active() { return active; }
+  };
+})();

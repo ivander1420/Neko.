@@ -1,0 +1,79 @@
+/* ============================================================
+   NEKO — Hiasan 3D (js/ornaments.js)
+   Token warna diturunkan dari variabel tema, jadi bentuknya
+   ikut berubah warna saat dunia/gaya diganti.
+   ============================================================ */
+
+:root {
+  --orn-main: var(--accent);
+  --orn-hi: color-mix(in srgb, var(--accent) 26%, #ffffff);
+  --orn-mid: color-mix(in srgb, var(--accent) 84%, #16202b);
+  --orn-lo: color-mix(in srgb, var(--accent) 44%, #0b1016);
+  --orn-rim: color-mix(in srgb, var(--accent-2) 72%, #ffffff);
+}
+
+html[data-mode="light"] {
+  --orn-mid: color-mix(in srgb, var(--accent) 74%, #4a5568);
+  --orn-lo: color-mix(in srgb, var(--accent) 38%, #2b3441);
+}
+
+.orn {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 10px 16px rgba(8, 12, 18, .28));
+}
+
+.orn-cluster {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orn-cluster .orn {
+  position: absolute;
+  width: clamp(44px, 7vw, 96px);
+  animation: orn-float 7s ease-in-out infinite;
+  will-change: transform;
+}
+
+.orn-cluster .o1 { top: 10%; right: 6%; width: clamp(52px, 8vw, 108px); animation-duration: 7.2s; }
+.orn-cluster .o2 { top: 46%; right: 21%; width: clamp(34px, 5vw, 66px); animation-duration: 9s; animation-delay: -2.4s; }
+.orn-cluster .o3 { bottom: 8%; right: 3%; width: clamp(40px, 6vw, 82px); animation-duration: 11s; animation-delay: -5s; }
+
+@keyframes orn-float {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-1.5deg); }
+  50%      { transform: translate3d(0, -12px, 0) rotate(2deg); }
+}
+
+/* Tempelan kecil di dalam kartu / header. */
+.orn-slot {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: clamp(30px, 5vw, 46px);
+  aspect-ratio: 1;
+}
+
+.orn-slot .orn { width: 100%; filter: drop-shadow(0 6px 10px rgba(8, 12, 18, .3)); }
+
+.orn-inline { width: 34px; height: 34px; }
+
+/* Hero halaman: ruang untuk cluster di sisi kanan. */
+.library-hero,
+.arena-hero,
+.home-hero,
+.profile-hero { position: relative; overflow: hidden; }
+
+@media (max-width: 700px) {
+  .orn-cluster .o1 { top: 6%; right: 3%; width: clamp(44px, 14vw, 64px); }
+  .orn-cluster .o2 { display: none; }
+  .orn-cluster .o3 { bottom: 4%; right: auto; left: 6%; width: clamp(38px, 12vw, 56px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orn-cluster .orn { animation: none; }
+}

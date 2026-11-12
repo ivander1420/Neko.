@@ -1,0 +1,16 @@
+{
+  "name": "NEKO — Belajar TJKT Sambil Bermain",
+  "short_name": "NEKO",
+  "description": "Aplikasi belajar TJKT interaktif dengan tema, buku materi, arena game, asisten Miko, delapan dunia tema, dan lima season XP.",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1b110b",
+  "theme_color": "#1b110b",
+  "lang": "id",
+  "icons": [
+    { "src": "./public/icons/neko-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./public/icons/neko-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

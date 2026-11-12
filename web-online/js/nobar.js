@@ -1,0 +1,942 @@
+/* ============================================================
+   NEKO · js/nobar.js
+   Nobar (nonton bareng YouTube) — satu implementasi kanonik.
+   Video YouTube IFrame API tersinkron di tengah, penonton di
+   bawah, chat & cari video di panel kanan ala Discord. Suara
+   aplikasi padam total saat masuk. Voice chat WebRTC mesh dengan
+   mute & volume per orang (hanya di sisi yang mengatur).
+   ============================================================ */
+(function () {
+  'use strict';
+
+  const Neko = window.Neko = window.Neko || {};
+  const { esc, initials } = Neko.util;
+  const { icon } = Neko.icons;
+
+  const COLORS = ['#f97316', '#a855f7', '#22c55e', '#ec4899', '#0ea5e9', '#eab308', '#14b8a6', '#f43f5e'];
+  const STUN = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:global.stun.twilio.com:3478' }
+  ];
+
+  const S = {
+    layer: null, sheetEntry: null, id: '', view: null, tab: 'chat',
+    createPrivacy: 'public', createControl: 'host',
+    mutedOthers: new Map(), volumes: new Map(), deafened: false,
+    micOn: false, micStream: null, peers: new Map(),
+    yt: null, ytReady: false, currentVideo: '', suppressSyncUntil: 0, pendingState: null,
+    listener: null, heartbeat: null, speakTimer: null,
+    audioCtx: null, localAnalyser: null, localData: null,
+    peopleSig: '', chatSig: '', hostSig: '', searchBusy: false
+  };
+
+  const myKey = () => String((Neko.store && Neko.store.session || {}).username || '').trim().toLowerCase();
+
+  function ytId(url) {
+    const value = String(url || '').trim();
+    const m = value.match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/)([A-Za-z0-9_-]{6,})/);
+    if (m) return m[1];
+    return /^[A-Za-z0-9_-]{11}$/.test(value) ? value : '';
+  }
+
+  function niceError(error) {
+    const message = String((error && error.message) || '');
+    if (/offline|tidak terhubung/i.test(message)) return 'Server NEKO tidak terhubung. Nyalakan server untuk nobar.';
+    if (/login|masuk dulu/i.test(message)) return 'Masuk dulu untuk memakai nobar.';
+    return message || 'Terjadi kesalahan.';
+  }
+
+  /* ---------------- YouTube IFrame API ---------------- */
+
+  let ytPromise = null;
+  function ensureYT() {
+    if (window.YT && window.YT.Player) return Promise.resolve();
+    if (ytPromise) return ytPromise;
+    ytPromise = new Promise((resolve, reject) => {
+      const prev = window.onYouTubeIframeAPIReady;
+      const tag = document.createElement('script');
+      let settled = false;
+      const timer = window.setTimeout(() => finish(new Error('YouTube Player tidak merespons.')), 12000);
+      function finish(error) {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        window.onYouTubeIframeAPIReady = prev;
+        if (error) { tag.remove(); ytPromise = null; reject(error); }
+        else resolve();
+      }
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof prev === 'function') { try { prev(); } catch (error) { /* abaikan */ } }
+        finish();
+      };
+      tag.src = 'https://www.youtube.com/iframe_api';
+      tag.async = true;
+      tag.onerror = () => finish(new Error('Gagal memuat YouTube Player.'));
+      document.head.appendChild(tag);
+    });
+    return ytPromise;
+  }
+
+  /* ---------------- Buka / buat / gabung ---------------- */
+
+  function open() {
+    if (!Neko.api.online) { Neko.ui.toast('Butuh server', 'Nobar berjalan lewat server NEKO.', 'error', 'warning'); return; }
+    if (S.layer && S.layer.isConnected) return;
+    createSheet();
+  }
+
+  function createSheet() {
+    S.createPrivacy = 'public';
+    S.createControl = 'host';
+    const entry = Neko.ui.sheet({
+      kicker: 'NOBAR · NONTON BARENG',
+      title: 'Buat atau gabung room',
+      sub: 'Cari video YouTube langsung di sini, ketuk videonya untuk mulai nobar bareng teman.',
+      className: 'nobar-sheet',
+      body:
+        '<div class="field"><span class="form-label nobar-yt-label"><span class="nobar-yt-logo">' + icon('play') + '</span> YouTube</span>' +
+        '<div class="nobar-search-box"><input type="text" id="nobarBrowse" placeholder="Cari video YouTube…" autocomplete="off" spellcheck="false">' +
+        '<button type="button" class="btn btn-soft" data-nobar-browse-go aria-label="Cari">' + icon('search') + '</button></div>' +
+        '<div class="nobar-browse-results" data-nobar-browse></div></div>' +
+        '<div class="field"><span class="form-label">Privasi room</span><div class="nobar-actions">' +
+        '<button type="button" class="btn btn-primary" data-privacy="public">' + icon('globe') + ' Publik</button>' +
+        '<button type="button" class="btn btn-soft" data-privacy="private">' + icon('lock') + ' Privat</button>' +
+        '</div></div>' +
+        '<div class="field"><span class="form-label">Kontrol video</span><div class="nobar-actions">' +
+        '<button type="button" class="btn btn-primary" data-control="host">' + icon('crown') + ' Host saja</button>' +
+        '<button type="button" class="btn btn-soft" data-control="all">' + icon('users') + ' Semua orang</button>' +
+        '</div></div>' +
+        '<div class="nobar-join-block"><span class="form-label">Atau gabung dengan kode</span>' +
+        '<div class="nobar-compose"><input type="text" id="nobarJoinCode" placeholder="Kode room (mis. nb1a2b3c)" autocomplete="off" spellcheck="false">' +
+        '<button type="button" class="btn btn-soft" data-nobar-join>' + icon('login') + ' Gabung</button></div>' +
+        '<div class="nobar-active" data-nobar-active></div></div>',
+      onMount: (sheetEl, entry) => {
+        S.sheetEntry = entry;
+        const browse = sheetEl.querySelector('#nobarBrowse');
+        sheetEl.querySelectorAll('[data-privacy]').forEach(btn => btn.addEventListener('click', () => {
+          S.createPrivacy = btn.dataset.privacy;
+          sheetEl.querySelectorAll('[data-privacy]').forEach(b => { b.classList.toggle('btn-primary', b === btn); b.classList.toggle('btn-soft', b !== btn); });
+        }));
+        sheetEl.querySelectorAll('[data-control]').forEach(btn => btn.addEventListener('click', () => {
+          S.createControl = btn.dataset.control;
+          sheetEl.querySelectorAll('[data-control]').forEach(b => { b.classList.toggle('btn-primary', b === btn); b.classList.toggle('btn-soft', b !== btn); });
+        }));
+        sheetEl.querySelector('[data-nobar-browse-go]').addEventListener('click', () => browseSearch(sheetEl, browse.value));
+        browse.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); browseSearch(sheetEl, browse.value); } });
+        sheetEl.querySelector('[data-nobar-join]').addEventListener('click', () => doJoin(sheetEl.querySelector('#nobarJoinCode').value));
+        sheetEl.querySelector('#nobarJoinCode').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doJoin(e.target.value); } });
+        loadActiveRooms(sheetEl.querySelector('[data-nobar-active]'));
+        browseSearch(sheetEl, 'lofi study beats');
+        window.setTimeout(() => browse.focus(), 80);
+      },
+      onClose: () => { if (S.sheetEntry === entry) S.sheetEntry = null; }
+    });
+  }
+
+  function videoCards(results, attr) {
+    return results.map(r =>
+      '<button type="button" class="nobar-video-card" ' + attr + '="' + esc(r.id) + '">' +
+      '<span class="nobar-vc-thumb"><img src="' + esc(r.thumb) + '" alt="" loading="lazy">' +
+      (r.length ? '<span class="nobar-vc-dur">' + esc(r.length) + '</span>' : '') + '</span>' +
+      '<span class="nobar-vc-meta"><b>' + esc(r.title) + '</b><small>' + esc(r.channel || 'YouTube') + '</small></span></button>'
+    ).join('');
+  }
+
+  function searchFailure(box, query, error) {
+    const message = error && error.status === 404
+      ? 'Server online belum menyediakan fitur Nobar versi ini. Pembaruan APK saja tidak memperbarui server.'
+      : 'Pencarian YouTube sedang tidak tersedia. Periksa koneksi, lalu coba lagi.';
+    box.innerHTML = '<div class="nobar-search-empty"><p>' + esc(message) + '</p>' +
+      '<a class="btn btn-soft" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=' + encodeURIComponent(query) + '">' +
+      icon('play') + 'Cari langsung di YouTube</a><p>Pencarian resmi terkini; tidak tersinkron sebagai room Nobar.</p></div>';
+  }
+
+  async function browseSearch(sheetEl, query) {
+    const box = sheetEl.querySelector('[data-nobar-browse]');
+    const q = String(query || '').trim();
+    if (!box) return;
+    const ticket = {}; box._searchTicket = ticket;
+    if (!q) { box.innerHTML = '<div class="nobar-search-empty">Ketik kata kunci lalu tekan Enter untuk menjelajah YouTube.</div>'; return; }
+    box.innerHTML = '<div class="nobar-search-empty">Mencari di YouTube…</div>';
+    try {
+      const data = await Neko.api.nobar.search(q);
+      if (!box.isConnected || box._searchTicket !== ticket) return;
+      const results = data.results || [];
+      if (!results.length) { box.innerHTML = '<div class="nobar-search-empty">Tidak ada hasil untuk "' + esc(q) + '".</div>'; return; }
+      box.innerHTML = videoCards(results, 'data-browse-id');
+      box.querySelectorAll('[data-browse-id]').forEach(el => el.addEventListener('click', () => doCreate(el.dataset.browseId)));
+    } catch (error) { if (box.isConnected && box._searchTicket === ticket) searchFailure(box, q, error); }
+  }
+
+  async function doCreate(videoId) {
+    const vid = ytId(videoId);
+    if (!vid) { Neko.ui.toast('Video tidak valid', 'Pilih video dari hasil pencarian YouTube.', 'warn', 'warning'); return; }
+    try {
+      const data = await Neko.api.nobar.create(vid, { public: S.createPrivacy === 'public', control: S.createControl });
+      enterRoom(data.state);
+    } catch (error) {
+      Neko.ui.toast('Gagal membuat room', niceError(error), 'error', 'warning');
+    }
+  }
+
+  async function doJoin(code) {
+    const id = String(code || '').trim();
+    if (!id) { Neko.ui.toast('Kode kosong', 'Masukkan kode room nobar.', 'warn', 'warning'); return; }
+    try {
+      const data = await Neko.api.nobar.join(id);
+      enterRoom(data.state);
+    } catch (error) {
+      Neko.ui.toast('Gagal gabung', niceError(error), 'error', 'warning');
+    }
+  }
+
+  async function loadActiveRooms(box) {
+    if (!box) return;
+    try {
+      const data = await Neko.api.nobar.list();
+      const list = (data.rooms || []).filter(r => r.isPublic !== false);
+      if (!list.length) { box.innerHTML = '<div class="nobar-pick-empty">Belum ada room publik aktif.</div>'; return; }
+      box.innerHTML = '<div class="nobar-active-title">Room publik aktif</div>' + list.map(r =>
+        '<button type="button" class="nobar-pick-item" data-active-id="' + esc(r.id) + '">' +
+        '<span class="nobar-avatar" style="--c:' + COLORS[0] + '">' + icon('live') + '</span>' +
+        '<span><b>' + esc(r.host || 'Room nobar') + '</b><small>' + esc(r.id) + ' · ' + (r.viewers || 0) + ' penonton</small></span></button>'
+      ).join('');
+      box.querySelectorAll('[data-active-id]').forEach(el => el.addEventListener('click', () => doJoin(el.dataset.activeId)));
+    } catch (error) { box.innerHTML = ''; }
+  }
+
+  function enterRoom(state) {
+    if (!state || !state.id) return;
+    S.id = state.id;
+    S.view = state;
+    S.mutedOthers.clear(); S.volumes.clear(); S.deafened = false;
+    S.peopleSig = S.chatSig = S.hostSig = '';
+    S.currentVideo = ytId(state.video);
+    if (S.sheetEntry) { S.sheetEntry.close(); S.sheetEntry = null; }
+    buildLayer();
+    Neko.audio.play('success');
+    Neko.audio.enterWatchParty();
+    subscribe();
+    paint();
+    initYT(ytId(state.video));
+  }
+
+  /* ---------------- Lapisan room ---------------- */
+
+  function buildLayer() {
+    const layer = document.createElement('div');
+    layer.className = 'room-layer nobar-layer';
+    layer.innerHTML =
+      '<div class="room-shell"><div class="nobar-inner" data-nobar-inner>' +
+      '<div class="nobar-video-col">' +
+      '<header class="room-top nobar-top">' +
+      '<button type="button" class="room-exit" data-nobar-exit>' + icon('exit') + '<span>Keluar</span></button>' +
+      '<div class="room-top-title"><b>' + icon('live') + ' NOBAR</b><small data-nobar-meta></small></div>' +
+      '<div class="nobar-top-actions">' +
+      '<button type="button" class="btn btn-soft" data-nobar-copy title="Salin kode">' + icon('copy') + '<span data-nobar-code></span></button>' +
+      '<button type="button" class="btn btn-soft" data-nobar-full title="Layar penuh">' + icon('expand') + '</button>' +
+      '</div></header>' +
+      '<div class="nobar-video-wrap"><div class="nobar-screen" data-nobar-screen>' +
+      '<div id="nobar-frame"></div><div class="nobar-video-note" data-nobar-note hidden></div>' +
+      '<div class="nobar-screen-lock" data-nobar-lock hidden><span class="nobar-lock-badge">' + icon('crown') + ' Mode Host Saja</span></div>' +
+      '</div></div>' +
+      '<div class="nobar-voicebar" data-nobar-voicebar>' +
+      '<button type="button" class="nobar-voice-btn" data-nobar-mic>' + icon('microphone') + '<span>Mic</span></button>' +
+      '<button type="button" class="nobar-voice-btn" data-nobar-deafen>' + icon('volume-off') + '<span>Deafen</span></button>' +
+      '<span class="nobar-voice-status" data-nobar-voice-status></span>' +
+      '</div>' +
+      '<div class="nobar-people" data-nobar-people></div>' +
+      '</div>' +
+      '<aside class="nobar-side">' +
+      '<div class="nobar-side-tabs">' +
+      '<button type="button" class="on" data-side-tab="chat">' + icon('chat') + ' Chat</button>' +
+      '<button type="button" data-side-tab="search">' + icon('search') + ' Cari</button>' +
+      '</div>' +
+      '<div class="nobar-side-panel" data-side-panel="chat">' +
+      '<div class="nobar-chat-log" data-nobar-log></div>' +
+      '<form class="nobar-compose" data-nobar-compose><input type="text" placeholder="Ketik pesan…" maxlength="300" autocomplete="off">' +
+      '<button type="submit" class="btn btn-primary" aria-label="Kirim">' + icon('send') + '</button></form>' +
+      '</div>' +
+      '<div class="nobar-side-panel" data-side-panel="search" hidden>' +
+      '<div class="nobar-search-head">' +
+      '<div class="nobar-yt-brand"><span class="nobar-yt-logo">' + icon('play') + '</span> YouTube</div>' +
+      '<div class="nobar-search-box"><input type="text" data-nobar-search-input placeholder="Cari video YouTube…" autocomplete="off">' +
+      '<button type="button" class="btn btn-soft" data-nobar-search-go aria-label="Cari">' + icon('search') + '</button></div>' +
+      '</div>' +
+      '<div class="nobar-search-results" data-nobar-results></div>' +
+      '</div></aside>' +
+      '</div></div>';
+    document.body.appendChild(layer);
+    document.body.style.overflow = 'hidden';
+    S.layer = layer;
+    window.requestAnimationFrame(() => layer.classList.add('is-open'));
+    bindLayer(layer);
+    layer.addEventListener('pointerdown', resumeAudio, { once: true });
+  }
+
+  function bindLayer(layer) {
+    layer.querySelector('[data-nobar-exit]').addEventListener('click', confirmLeave);
+    layer.querySelector('[data-nobar-copy]').addEventListener('click', copyCode);
+    layer.querySelector('[data-nobar-full]').addEventListener('click', toggleFullscreen);
+    layer.querySelector('[data-nobar-screen]').addEventListener('dblclick', toggleFullscreen);
+    const lockEl = layer.querySelector('[data-nobar-lock]');
+    if (lockEl) {
+      lockEl.addEventListener('click', () => {
+        Neko.ui.toast('Mode Host Saja', 'Pemutaran film diatur oleh host. Kamu menonton otomatis bersama host.', 'info', 'shield');
+      });
+    }
+    layer.querySelector('.nobar-side-tabs').addEventListener('click', e => {
+      const btn = e.target.closest('[data-side-tab]');
+      if (!btn) return;
+      S.tab = btn.dataset.sideTab;
+      layer.querySelectorAll('[data-side-tab]').forEach(b => b.classList.toggle('on', b === btn));
+      layer.querySelectorAll('[data-side-panel]').forEach(p => { p.hidden = p.dataset.sidePanel !== S.tab; });
+    });
+    const searchInput = layer.querySelector('[data-nobar-search-input]');
+    layer.querySelector('[data-nobar-search-go]').addEventListener('click', () => nobarSearch(searchInput.value));
+    searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); nobarSearch(searchInput.value); } });
+    layer.querySelector('[data-nobar-mic]').addEventListener('click', toggleMic);
+    layer.querySelector('[data-nobar-deafen]').addEventListener('click', toggleDeafen);
+    layer.querySelector('[data-nobar-compose]').addEventListener('submit', e => {
+      e.preventDefault();
+      const input = e.target.querySelector('input');
+      const text = input.value.trim();
+      if (!text || !S.id) return;
+      Neko.api.nobar.send({ type: 'nobar-chat', id: S.id, text });
+      input.value = '';
+    });
+  }
+
+  function confirmLeave() {
+    Neko.ui.dialog({
+      title: 'Keluar nobar?', body: 'Kamu akan meninggalkan room nobar ini.',
+      confirmText: 'Keluar', cancelText: 'Batal', danger: true, icon: 'exit'
+    }).then(ok => { if (ok) close(); });
+  }
+
+  /* ---------------- Render ---------------- */
+
+  function paint() {
+    if (!S.layer || !S.view) return;
+    const view = S.view;
+    const meta = S.layer.querySelector('[data-nobar-meta]');
+    if (meta) meta.textContent = (view.viewers || []).length + ' penonton · host ' + (view.hostName || view.host) + ' · ' + (view.canControl ? 'kamu bisa atur video' : 'hanya host yang atur');
+    const code = S.layer.querySelector('[data-nobar-code]');
+    if (code) code.textContent = view.id;
+    paintPeople();
+    paintChat();
+    paintHostActions();
+    paintVoicebar();
+    updateLock();
+  }
+
+  function updateLock() {
+    const lock = S.layer && S.layer.querySelector('[data-nobar-lock]');
+    if (!lock || !S.view) return;
+    lock.hidden = Boolean(S.view.canControl);
+  }
+
+  function paintPeople() {
+    const box = S.layer.querySelector('[data-nobar-people]');
+    const viewers = S.view.viewers || [];
+    const sig = viewers.map(v => v.key + ':' + v.micOn + ':' + v.muted + ':' + v.isHost + ':' + (S.mutedOthers.get(v.key) ? 1 : 0)).join('|');
+    if (sig === S.peopleSig) return;
+    S.peopleSig = sig;
+    box.innerHTML = viewers.map((v, i) => {
+      const color = COLORS[i % COLORS.length];
+      const localMuted = Boolean(S.mutedOthers.get(v.key));
+      const micCls = v.micOn && !v.muted && !localMuted ? '' : ' is-muted';
+      const micIcon = v.micOn && !localMuted ? 'microphone' : 'volume-off';
+      return '<button type="button" class="nobar-viewer" data-viewer="' + esc(v.key) + '" data-name="' + esc(v.name) + '">' +
+        '<span class="nobar-avatar" style="--c:' + color + '">' + esc(initials(v.name)) + '</span>' +
+        '<b>' + esc(v.name) + '</b>' +
+        (v.isHost ? '<span class="nobar-host-tag" title="Host">' + icon('crown') + '</span>' : '') +
+        '<span class="nobar-mic' + micCls + '">' + icon(micIcon) + '</span></button>';
+    }).join('');
+    box.querySelectorAll('[data-viewer]').forEach(bindViewer);
+  }
+
+  function bindViewer(el) {
+    const key = el.dataset.viewer;
+    const name = el.dataset.name;
+    let pressTimer = null;
+    let longFired = false;
+    el.addEventListener('pointerdown', () => {
+      longFired = false;
+      pressTimer = window.setTimeout(() => { longFired = true; viewerSheet(key, name); }, 520);
+    });
+    const cancel = () => { window.clearTimeout(pressTimer); pressTimer = null; };
+    el.addEventListener('pointerup', cancel);
+    el.addEventListener('pointerleave', cancel);
+    el.addEventListener('pointercancel', cancel);
+    el.addEventListener('click', () => { if (!longFired) viewerSheet(key, name); longFired = false; });
+  }
+
+  function viewerSheet(key, name) {
+    const isMe = key === myKey();
+    const muted = Boolean(S.mutedOthers.get(key));
+    const vol = Math.round((typeof S.volumes.get(key) === 'number' ? S.volumes.get(key) : 1) * 100);
+    const body = isMe
+      ? '<p class="field-hint">Ini kamu. Nyalakan mic untuk bicara; orang lain mendengar lewat perangkat masing-masing.</p>' +
+        '<div class="g-actions"><button type="button" class="btn ' + (S.micOn ? 'btn-danger' : 'btn-primary') + '" data-vm-mic>' + icon('microphone') + (S.micOn ? ' Matikan mic saya' : ' Nyalakan mic saya') + '</button></div>'
+      : '<p class="field-hint">Mute &amp; volume hanya berlaku di perangkatmu — tidak mengubah apa yang didengar orang lain.</p>' +
+        '<div class="g-actions"><button type="button" class="btn ' + (muted ? 'btn-danger' : 'btn-soft') + '" data-vm-mute>' + icon(muted ? 'volume-off' : 'volume') + (muted ? ' Bunyikan kembali' : ' Bisukan orang ini') + '</button></div>' +
+        '<label class="field"><span class="form-label">Volume <b data-vm-vol-label>' + vol + '%</b></span>' +
+        '<input type="range" min="0" max="100" step="5" value="' + vol + '" data-vm-volume></label>';
+    Neko.ui.sheet({
+      kicker: 'PENONTON', title: name || key, sub: isMe ? 'Pengaturan suaramu' : 'Pengaturan suara lokal',
+      body,
+      onMount: (sheetEl, entry) => {
+        const micBtn = sheetEl.querySelector('[data-vm-mic]');
+        if (micBtn) micBtn.addEventListener('click', () => { toggleMic(); entry.close(); });
+        const muteBtn = sheetEl.querySelector('[data-vm-mute]');
+        if (muteBtn) muteBtn.addEventListener('click', () => {
+          const next = !S.mutedOthers.get(key);
+          S.mutedOthers.set(key, next);
+          applyAudio(key);
+          S.peopleSig = ''; paintPeople();
+          muteBtn.classList.toggle('btn-danger', next);
+          muteBtn.classList.toggle('btn-soft', !next);
+          muteBtn.innerHTML = icon(next ? 'volume-off' : 'volume') + (next ? ' Bunyikan kembali' : ' Bisukan orang ini');
+        });
+        const range = sheetEl.querySelector('[data-vm-volume]');
+        if (range) range.addEventListener('input', () => {
+          const value = Number(range.value) / 100;
+          S.volumes.set(key, value);
+          applyAudio(key);
+          const label = sheetEl.querySelector('[data-vm-vol-label]');
+          if (label) label.textContent = range.value + '%';
+        });
+      }
+    });
+  }
+
+  function paintChat() {
+    const box = S.layer.querySelector('[data-nobar-log]');
+    const messages = S.view.messages || [];
+    const last = messages[messages.length - 1];
+    const sig = messages.length + ':' + (last ? last.at + ':' + last.text : '');
+    if (sig === S.chatSig) return;
+    S.chatSig = sig;
+    box.innerHTML = messages.map(m =>
+      '<div class="nobar-chat-row"><b>' + esc(m.name || m.from) + '</b><span>' + esc(m.text) + '</span></div>'
+    ).join('');
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function paintHostActions() {
+    const sig = S.view.isHost + ':' + S.view.control;
+    if (sig === S.hostSig) return;
+    S.hostSig = sig;
+    const old = S.layer.querySelector('[data-nobar-host-actions]');
+    if (old) old.remove();
+    if (!S.view.isHost) return;
+    const people = S.layer.querySelector('[data-nobar-people]');
+    const bar = document.createElement('div');
+    bar.className = 'nobar-host-actions';
+    bar.setAttribute('data-nobar-host-actions', '');
+    bar.innerHTML =
+      '<button type="button" class="btn btn-soft" data-nobar-mode>' + icon('shield') + ' Kontrol: ' + (S.view.control === 'all' ? 'semua orang' : 'host saja') + '</button>' +
+      '<button type="button" class="btn btn-soft" data-nobar-sync-now>' + icon('refresh') + ' Sinkronkan sekarang</button>';
+    people.parentNode.insertBefore(bar, people);
+    bar.querySelector('[data-nobar-mode]').addEventListener('click', () => {
+      Neko.api.nobar.send({ type: 'nobar-control', id: S.id, mode: S.view.control === 'all' ? 'host' : 'all' });
+    });
+    bar.querySelector('[data-nobar-sync-now]').addEventListener('click', () => sendSync(true));
+  }
+
+  function paintVoicebar() {
+    if (!S.layer) return;
+    const mic = S.layer.querySelector('[data-nobar-mic]');
+    const deafen = S.layer.querySelector('[data-nobar-deafen]');
+    const status = S.layer.querySelector('[data-nobar-voice-status]');
+    if (mic) mic.classList.toggle('on', S.micOn);
+    if (deafen) deafen.classList.toggle('on', S.deafened);
+    let connected = 0;
+    S.peers.forEach(p => { if (p.pc && p.pc.connectionState === 'connected') connected += 1; });
+    if (status) status.textContent = S.deafened ? 'Audio dimatikan (deafen)' : (S.micOn ? 'Mic aktif · ' + connected + ' terhubung' : 'Mic mati — klik untuk bicara');
+  }
+
+  /* ---------------- YouTube player & sinkronisasi ---------------- */
+
+  function showNote(text, action) {
+    const note = S.layer && S.layer.querySelector('[data-nobar-note]');
+    if (!note) return;
+    note.replaceChildren();
+    note.hidden = !text;
+    if (!text) return;
+    const message = document.createElement('span');
+    message.textContent = text;
+    note.appendChild(message);
+    if (action) {
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'btn btn-primary';
+      button.textContent = action === 'play' ? 'Putar video' : 'Coba lagi';
+      button.addEventListener('click', () => {
+        showNote('');
+        if (action === 'play') { try { S.yt.playVideo(); } catch (error) { showNote('Pemutar belum siap. Coba lagi.', 'retry'); } }
+        else {
+          try { if (S.yt) S.yt.destroy(); } catch (error) { /* pemutar sudah dilepas */ }
+          S.yt = null; S.ytReady = false;
+          const host = document.createElement('div'); host.id = 'nobar-frame';
+          const screen = S.layer && S.layer.querySelector('[data-nobar-screen]');
+          if (screen) { const old = screen.querySelector('#nobar-frame'); if (old) old.remove(); screen.prepend(host); initYT(S.currentVideo); }
+        }
+      });
+      note.appendChild(button);
+    }
+    if (S.currentVideo) {
+      const link = document.createElement('a');
+      link.href = 'https://www.youtube.com/watch?v=' + encodeURIComponent(S.currentVideo);
+      link.target = '_blank'; link.rel = 'noopener'; link.className = 'btn btn-soft';
+      link.textContent = 'Buka di YouTube (tanpa sinkronisasi room)';
+      note.appendChild(link);
+    }
+  }
+
+  async function initYT(videoId) {
+    const layer = S.layer;
+    try { await ensureYT(); } catch (error) { if (S.layer === layer) showNote('Gagal memuat YouTube Player. Periksa koneksi internet.', 'retry'); return; }
+    if (!layer || S.layer !== layer || !layer.isConnected) return;
+    if (!videoId) { showNote('Host belum memilih video.'); return; }
+    showNote('');
+    S.currentVideo = videoId;
+    const playerVars = { playsinline: 1, autoplay: 1, controls: 1, rel: 0, fs: 0 };
+    if (/^https?:$/.test(location.protocol)) playerVars.origin = location.origin;
+    try {
+      S.yt = new YT.Player('nobar-frame', {
+        height: '100%', width: '100%', videoId, playerVars,
+        events: {
+          onReady: onYTReady, onStateChange: onYTState, onError: onYTError
+        }
+      });
+      const iframe = S.yt.getIframe();
+      if (iframe) iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+    } catch (error) { showNote('Tidak bisa menyiapkan pemutar video.', 'retry'); return; }
+    startHeartbeat();
+  }
+
+  function onYTReady(event) {
+    S.ytReady = true;
+    showNote('');
+    try { event.target.setVolume(80); } catch (error) { /* abaikan */ }
+    if (S.pendingState) { const pending = S.pendingState; S.pendingState = null; syncFromState(pending); }
+    else if (S.view) syncFromState(S.view);
+    else { try { event.target.playVideo(); } catch (error) { /* autoplay diblokir */ } }
+    window.setTimeout(() => {
+      try {
+        if (S.view && S.view.playing && S.yt && S.yt.getPlayerState() !== YT.PlayerState.PLAYING) {
+          showNote('Ketuk untuk memutar video bersama host.', 'play');
+        }
+      } catch (e) {}
+    }, 1500);
+  }
+
+  function onYTState(event) {
+    if (event.data === YT.PlayerState.PLAYING) showNote('');
+    if (!S.view || !S.view.canControl) return;
+    if (Date.now() < S.suppressSyncUntil) return;
+    const state = event.data;
+    if (state === YT.PlayerState.PLAYING || state === YT.PlayerState.PAUSED) sendSync(false);
+  }
+
+  function onYTError(event) {
+    const code = Number(event && event.data);
+    if (code === 101 || code === 150) showNote('Video ini tidak mengizinkan sematan (embed). Host bisa memilih video lain lewat tab Cari.');
+    else if (code === 100) showNote('Video tidak ditemukan atau sudah dihapus.');
+    else if (code === 2) showNote('ID video tidak valid.');
+    else if (code === 153) showNote('YouTube tidak menerima identitas aplikasi (Referer). Gunakan APK HTTPS terbaru atau buka video di YouTube.');
+    else showNote('Terjadi kesalahan pada pemutar video. Periksa koneksi atau pilih video lain.', 'retry');
+  }
+
+  function sendSync(force) {
+    if (!S.view || !S.view.canControl || !S.yt || !S.ytReady) return;
+    if (!force && Date.now() < S.suppressSyncUntil) return;
+    let position = 0; let playing = false;
+    try { position = S.yt.getCurrentTime() || 0; playing = S.yt.getPlayerState() === YT.PlayerState.PLAYING; } catch (error) { return; }
+    Neko.api.nobar.send({ type: 'nobar-sync', id: S.id, playing, position });
+  }
+
+  function startHeartbeat() {
+    window.clearInterval(S.heartbeat);
+    S.heartbeat = window.setInterval(() => { if (S.view && S.view.canControl) sendSync(true); }, 3000);
+  }
+
+  function syncFromState(state) {
+    if (!state) return;
+    const vid = ytId(state.video);
+    if (!S.yt) {
+      if (vid) {
+        S.pendingState = state;
+        initYT(vid);
+      }
+      return;
+    }
+    if (!S.ytReady) { S.pendingState = state; return; }
+    if (vid && vid !== S.currentVideo) {
+      S.currentVideo = vid;
+      S.suppressSyncUntil = Date.now() + 1500;
+      try { S.yt.loadVideoById(vid); } catch (error) { /* abaikan */ }
+      return;
+    }
+    if (Date.now() < S.suppressSyncUntil) return;
+    S.suppressSyncUntil = Date.now() + 1200;
+    try {
+      const position = Number(state.position) || 0;
+      if (Math.abs((S.yt.getCurrentTime() || 0) - position) > 2) S.yt.seekTo(position, true);
+      const playerState = S.yt.getPlayerState();
+      if (state.playing && playerState !== YT.PlayerState.PLAYING) S.yt.playVideo();
+      else if (!state.playing && playerState !== YT.PlayerState.PAUSED) S.yt.pauseVideo();
+    } catch (error) { /* player belum siap */ }
+  }
+
+  function changeVideo(id) {
+    if (!S.view || !S.view.canControl) { Neko.ui.toast('Tidak bisa memutar', 'Hanya host (atau mode semua orang) yang bisa mengganti video.', 'warn', 'lock'); return; }
+    S.currentVideo = id;
+    S.suppressSyncUntil = Date.now() + 1500;
+    if (S.yt && S.ytReady) { try { S.yt.loadVideoById(id); } catch (error) { /* abaikan */ } }
+    Neko.api.nobar.send({ type: 'nobar-video', id: S.id, video: id });
+  }
+
+  async function nobarSearch(query) {
+    const box = S.layer && S.layer.querySelector('[data-nobar-results]');
+    const q = String(query || '').trim();
+    if (!box) return;
+    const ticket = {}; box._searchTicket = ticket;
+    if (!q) { box.innerHTML = ''; return; }
+    S.searchBusy = true;
+    box.innerHTML = '<div class="nobar-search-empty">Mencari…</div>';
+    try {
+      const data = await Neko.api.nobar.search(q);
+      if (!box.isConnected || box._searchTicket !== ticket) return;
+      const results = data.results || [];
+      if (!results.length) { box.innerHTML = '<div class="nobar-search-empty">Tidak ada hasil untuk "' + esc(q) + '".</div>'; }
+      else {
+        const hostNote = (!S.view || S.view.canControl) ? '' :
+          '<div class="nobar-search-host-note">' + icon('crown') + ' <span>Mode Host Saja aktif: Hanya host yang dapat mengganti video room.</span></div>';
+        box.innerHTML = hostNote + videoCards(results, 'data-play-id');
+        box.querySelectorAll('[data-play-id]').forEach(el => el.addEventListener('click', () => {
+          changeVideo(el.dataset.playId);
+          box.querySelectorAll('.nobar-video-card').forEach(x => x.classList.remove('on'));
+          el.classList.add('on');
+        }));
+      }
+    } catch (error) { if (box.isConnected && box._searchTicket === ticket) searchFailure(box, q, error); }
+    finally { if (box._searchTicket === ticket) S.searchBusy = false; }
+  }
+
+  /* ---------------- Layar penuh & salin kode ---------------- */
+
+  function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+
+  function toggleFullscreen() {
+    const screen = S.layer && S.layer.querySelector('[data-nobar-screen]');
+    if (!screen) return;
+    if (isFullscreen()) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit) { try { exit.call(document); } catch (error) { /* abaikan */ } }
+      return;
+    }
+    const req = screen.requestFullscreen || screen.webkitRequestFullscreen;
+    if (req) {
+      try {
+        const p = req.call(screen);
+        if (p && typeof p.catch === 'function') p.catch(() => fallbackFs(screen));
+      } catch (error) { fallbackFs(screen); }
+    } else fallbackFs(screen);
+  }
+
+  function fallbackFs(screen) { screen.classList.toggle('is-fs'); updateFsButton(); }
+
+  function updateFsButton() {
+    if (!S.layer) return;
+    const screen = S.layer.querySelector('[data-nobar-screen]');
+    const btn = S.layer.querySelector('[data-nobar-full]');
+    const on = isFullscreen() || (screen && screen.classList.contains('is-fs'));
+    if (btn) btn.innerHTML = icon(on ? 'shrink' : 'expand');
+  }
+
+  function copyCode() {
+    const code = S.id;
+    if (!code) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(() => Neko.ui.toast('Kode disalin', code + ' — bagikan ke temanmu.', 'success', 'copy')).catch(() => fallbackCopy(code));
+    } else fallbackCopy(code);
+  }
+
+  function fallbackCopy(code) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = code; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+      Neko.ui.toast('Kode disalin', code + ' — bagikan ke temanmu.', 'success', 'copy');
+    } catch (error) { Neko.ui.toast('Kode room', code, 'info', 'key'); }
+  }
+
+  /* ---------------- Langganan event server ---------------- */
+
+  function subscribe() {
+    S.listener = (data) => {
+      if (!data) return;
+      if (data.type === 'nobar-state') {
+        S.view = data.state;
+        syncFromState(data.state);
+        reconcilePeers(data.state.viewers);
+        paint();
+      } else if (data.type === 'nobar-signal') {
+        handleSignal(data);
+      } else if (data.type === 'nobar-closed') {
+        Neko.ui.toast('Room ditutup', 'Host mengakhiri room nobar ini.', 'info', 'warning');
+        close();
+      } else if (data.type === 'nobar-error') {
+        Neko.ui.toast('Nobar', data.error || 'Terjadi kesalahan.', 'warn', 'warning');
+      }
+    };
+    Neko.api.subscribeNobar(S.id, S.listener);
+  }
+
+  /* ---------------- Voice WebRTC mesh ---------------- */
+
+  function resumeAudio() {
+    if (!S.audioCtx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) { try { S.audioCtx = new Ctx(); } catch (error) { S.audioCtx = null; } }
+    }
+    if (S.audioCtx && S.audioCtx.state === 'suspended') S.audioCtx.resume().catch(() => { });
+    S.peers.forEach(p => { if (p.audio) p.audio.play().catch(() => { }); });
+    if (S.micStream && !S.localAnalyser) setupLocalAnalyser();
+  }
+
+  async function toggleMic() {
+    if (S.micOn) { disableMic(); return; }
+    if (!navigator.mediaDevices || !window.RTCPeerConnection) {
+      Neko.ui.toast('Tidak didukung', 'Peramban ini belum mendukung voice chat.', 'error', 'warning');
+      return;
+    }
+    try {
+      if (!S.micStream) {
+        S.micStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: { ideal: true }, autoGainControl: { ideal: true }, channelCount: 1 }
+        });
+      }
+      S.micStream.getAudioTracks().forEach(track => { track.enabled = true; });
+      S.micOn = true;
+      resumeAudio();
+      setupLocalAnalyser();
+      reconcilePeers(S.view ? S.view.viewers : []);
+      Neko.api.nobar.send({ type: 'nobar-mic', id: S.id, micOn: true });
+      paintVoicebar();
+      Neko.ui.toast('Mic aktif', 'Suaramu jernih dengan peredam bising. Klik lagi untuk membisukan.', 'success', 'microphone');
+    } catch (error) {
+      S.micOn = false;
+      Neko.ui.toast('Mic gagal', 'Izinkan akses mikrofon lalu coba lagi.', 'error', 'warning');
+    }
+  }
+
+  function disableMic() {
+    S.micOn = false;
+    if (S.micStream) S.micStream.getAudioTracks().forEach(track => { track.enabled = false; });
+    setSpeaking(myKey(), false);
+    Neko.api.nobar.send({ type: 'nobar-mic', id: S.id, micOn: false });
+    paintVoicebar();
+  }
+
+  function toggleDeafen() {
+    S.deafened = !S.deafened;
+    S.peers.forEach((p, key) => applyAudio(key));
+    paintVoicebar();
+    Neko.ui.toast(S.deafened ? 'Deafen aktif' : 'Deafen mati', S.deafened ? 'Kamu tidak mendengar siapa pun.' : 'Suara penonton kembali terdengar.', 'info', 'volume-off');
+  }
+
+  function ensurePeer(key) {
+    if (!key || key === myKey()) return null;
+    let p = S.peers.get(key);
+    if (p) return p;
+    const pc = new RTCPeerConnection({ iceServers: STUN });
+    p = { key, pc, polite: myKey() > key, makingOffer: false, ignoreOffer: false, candidates: [], audio: null, analyser: null, analyserData: null, senders: [] };
+    S.peers.set(key, p);
+    if (S.micStream) addLocalTracks(p);
+    pc.ontrack = event => { const stream = event.streams[0] || new MediaStream([event.track]); setupRemoteAudio(p, stream); };
+    pc.onicecandidate = event => { if (event.candidate) signal(key, 'ice', { candidate: event.candidate.toJSON() }); };
+    pc.onnegotiationneeded = async () => {
+      try { p.makingOffer = true; await pc.setLocalDescription(); signal(key, 'offer', { sdp: pc.localDescription.sdp }); }
+      catch (error) { /* abaikan */ }
+      finally { p.makingOffer = false; }
+    };
+    pc.onconnectionstatechange = () => paintVoicebar();
+    return p;
+  }
+
+  function addLocalTracks(p) {
+    if (!S.micStream) return;
+    S.micStream.getAudioTracks().forEach(track => {
+      if (!p.senders.some(sender => sender.track === track)) {
+        try { p.senders.push(p.pc.addTrack(track, S.micStream)); } catch (error) { /* abaikan */ }
+      }
+    });
+  }
+
+  function signal(to, kind, extra) {
+    Neko.api.nobar.send({ type: 'nobar-signal', id: S.id, to, kind, ...(extra || {}) });
+  }
+
+  async function handleSignal(ev) {
+    if (!ev || ev.to !== myKey()) return;
+    const from = ev.from;
+    if (!from) return;
+    const p = ensurePeer(from);
+    if (!p) return;
+    const pc = p.pc;
+    const kind = ev.kind;
+    if (kind === 'offer') {
+      const collision = p.makingOffer || pc.signalingState !== 'stable';
+      p.ignoreOffer = !p.polite && collision;
+      if (p.ignoreOffer) return;
+      try {
+        await pc.setRemoteDescription({ type: 'offer', sdp: ev.sdp });
+        await pc.setLocalDescription();
+        signal(from, 'answer', { sdp: pc.localDescription.sdp });
+        flushCandidates(p);
+      } catch (error) { /* abaikan */ }
+    } else if (kind === 'answer') {
+      try { await pc.setRemoteDescription({ type: 'answer', sdp: ev.sdp }); flushCandidates(p); } catch (error) { /* abaikan */ }
+    } else if (kind === 'ice' && ev.candidate) {
+      if (pc.remoteDescription) { try { await pc.addIceCandidate(ev.candidate); } catch (error) { /* abaikan */ } }
+      else p.candidates.push(ev.candidate);
+    }
+  }
+
+  function flushCandidates(p) {
+    const list = p.candidates.splice(0);
+    list.forEach(candidate => { try { p.pc.addIceCandidate(candidate); } catch (error) { /* abaikan */ } });
+  }
+
+  function setupRemoteAudio(p, stream) {
+    let audio = p.audio;
+    if (!audio) {
+      audio = document.createElement('audio');
+      audio.autoplay = true;
+      audio.setAttribute('data-nobar-peer', p.key);
+      audio.style.display = 'none';
+      if (S.layer) S.layer.appendChild(audio);
+      p.audio = audio;
+    }
+    audio.srcObject = stream;
+    audio.play().catch(() => { });
+    applyAudio(p.key);
+    if (S.audioCtx) {
+      try {
+        const src = S.audioCtx.createMediaStreamSource(stream);
+        const analyser = S.audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        src.connect(analyser);
+        p.analyser = analyser;
+        p.analyserData = new Uint8Array(analyser.frequencyBinCount);
+      } catch (error) { /* abaikan */ }
+    }
+    paintVoicebar();
+  }
+
+  function applyAudio(key) {
+    const p = S.peers.get(key);
+    if (!p || !p.audio) return;
+    p.audio.muted = Boolean(S.mutedOthers.get(key)) || S.deafened;
+    const v = S.volumes.get(key);
+    p.audio.volume = Math.min(1, Math.max(0, typeof v === 'number' ? v : 1));
+  }
+
+  function setupLocalAnalyser() {
+    if (!S.audioCtx || !S.micStream || S.localAnalyser) { startSpeaking(); return; }
+    try {
+      const src = S.audioCtx.createMediaStreamSource(S.micStream);
+      const analyser = S.audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      src.connect(analyser);
+      S.localAnalyser = analyser;
+      S.localData = new Uint8Array(analyser.frequencyBinCount);
+    } catch (error) { /* abaikan */ }
+    startSpeaking();
+  }
+
+  function startSpeaking() {
+    window.clearInterval(S.speakTimer);
+    S.speakTimer = window.setInterval(() => {
+      if (S.localAnalyser && S.micOn) {
+        S.localAnalyser.getByteTimeDomainData(S.localData);
+        setSpeaking(myKey(), rms(S.localData) > 0.06);
+      }
+      S.peers.forEach((p, key) => {
+        if (p.analyser) { p.analyser.getByteTimeDomainData(p.analyserData); setSpeaking(key, rms(p.analyserData) > 0.06); }
+      });
+    }, 220);
+  }
+
+  function rms(data) {
+    let sum = 0;
+    for (let i = 0; i < data.length; i += 1) { const x = (data[i] - 128) / 128; sum += x * x; }
+    return Math.sqrt(sum / (data.length || 1));
+  }
+
+  function setSpeaking(key, on) {
+    const el = S.layer && S.layer.querySelector('[data-viewer="' + key + '"]');
+    if (el) el.classList.toggle('is-speaking', on);
+  }
+
+  function reconcilePeers(viewers) {
+    const list = viewers || [];
+    const keys = new Set(list.map(v => v.key));
+    Array.from(S.peers.keys()).forEach(key => { if (!keys.has(key)) closePeer(key); });
+    if (S.micStream) list.forEach(v => { if (v.key !== myKey()) ensurePeer(v.key); });
+  }
+
+  function closePeer(key) {
+    const p = S.peers.get(key);
+    if (!p) return;
+    try { p.pc.close(); } catch (error) { /* abaikan */ }
+    if (p.audio) p.audio.remove();
+    S.peers.delete(key);
+  }
+
+  function teardownVoice() {
+    window.clearInterval(S.speakTimer); S.speakTimer = null;
+    if (S.micStream) { S.micStream.getTracks().forEach(track => track.stop()); S.micStream = null; }
+    Array.from(S.peers.keys()).forEach(closePeer);
+    S.micOn = false;
+    S.localAnalyser = null; S.localData = null;
+    if (S.audioCtx) { try { S.audioCtx.close(); } catch (error) { /* abaikan */ } S.audioCtx = null; }
+  }
+
+  /* ---------------- Tutup ---------------- */
+
+  function close() {
+    window.clearInterval(S.heartbeat); S.heartbeat = null;
+    if (S.listener) { Neko.api.unsubscribeNobar(S.listener); S.listener = null; }
+    if (S.id) Neko.api.nobar.leave(S.id).catch(() => { });
+    teardownVoice();
+    if (S.yt) { try { S.yt.destroy(); } catch (error) { /* abaikan */ } S.yt = null; }
+    S.ytReady = false;
+    Neko.audio.exitWatchParty();
+    if (isFullscreen()) { const exit = document.exitFullscreen || document.webkitExitFullscreen; if (exit) { try { exit.call(document); } catch (error) { /* abaikan */ } } }
+    const layer = S.layer; S.layer = null;
+    if (layer) { layer.classList.remove('is-open'); layer.classList.add('is-closing'); window.setTimeout(() => layer.remove(), 260); }
+    document.body.style.overflow = '';
+    S.id = ''; S.view = null; S.currentVideo = ''; S.pendingState = null;
+    S.mutedOthers.clear(); S.volumes.clear(); S.deafened = false;
+    S.peopleSig = S.chatSig = S.hostSig = '';
+  }
+
+  document.addEventListener('fullscreenchange', () => {
+    if (!S.layer) return;
+    const screen = S.layer.querySelector('[data-nobar-screen]');
+    if (screen && !isFullscreen()) screen.classList.remove('is-fs');
+    updateFsButton();
+  });
+  document.addEventListener('webkitfullscreenchange', () => { if (S.layer) updateFsButton(); });
+
+  Neko.nobar = {
+    init() { ensureYT().catch(() => { }); },
+    open, close, ensureYT
+  };
+})();

@@ -1,0 +1,574 @@
+/* ============================================================
+   NEKO · social.css
+   Leaderboard realtime, papan komunitas, kotak masuk global,
+   dan panel admin/developer.
+   ============================================================ */
+
+/* ---------------- Label grup notifikasi ---------------- */
+
+.notif-group-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 4px 0 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.notif-group-label .ic {
+  width: 14px;
+  height: 14px;
+  color: var(--accent); --sw: 2.45;}
+
+.notif-group-label:not(:first-child) {
+  margin-top: 18px;
+}
+
+.notif-item.announcement {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+    var(--surface-solid);
+}
+
+.notif-item.announcement .notif-ic {
+  color: var(--accent-ink);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+
+.notif-item.is-read {
+  opacity: .62;
+}
+
+/* ---------------- Leaderboard ---------------- */
+
+.rank-sheet .sheet-body {
+  padding-top: 2px;
+}
+
+.rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.rank-row {
+  display: grid;
+  grid-template-columns: 38px 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface-solid);
+  transition: transform .2s var(--ease-spring), border-color .2s, background .2s;
+}
+
+.rank-row:hover {
+  transform: translateX(2px);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+}
+
+.rank-row.is-self {
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--line));
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
+    var(--surface-solid);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.rank-row.is-top {
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 62%),
+    var(--surface-solid);
+}
+
+.rank-num {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface-3) 70%, transparent);
+}
+
+.rank-num .ic {
+  width: 18px;
+  height: 18px; --sw: 2.15;}
+
+.rank-row.top-1 .rank-num {
+  color: var(--accent-ink);
+  background: linear-gradient(140deg, color-mix(in oklab, var(--warn) 72%, var(--accent)), var(--warn));
+  box-shadow: 0 6px 18px -8px color-mix(in oklab, var(--warn) 70%, transparent);
+}
+
+.rank-row.top-2 .rank-num {
+  color: var(--accent-ink);
+  background: linear-gradient(140deg, color-mix(in oklab, var(--accent) 62%, var(--muted)), color-mix(in oklab, var(--accent) 38%, var(--accent-2)));
+}
+
+.rank-row.top-3 .rank-num {
+  color: var(--accent-ink);
+  background: linear-gradient(140deg, color-mix(in oklab, var(--danger) 66%, var(--warn)), color-mix(in oklab, var(--danger) 52%, var(--accent-2)));
+}
+
+.rank-avatar {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent-ink);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 8px 20px -12px color-mix(in srgb, var(--accent) 80%, transparent);
+}
+
+.rank-live {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--success);
+  border: 2px solid var(--bg);
+  animation: rank-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes rank-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 55%, transparent); }
+  60% { box-shadow: 0 0 0 6px transparent; }
+}
+
+.rank-copy {
+  min-width: 0;
+}
+
+.rank-copy b {
+  display: block;
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-copy b em {
+  font-style: normal;
+  font-size: 9px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-left: 4px;
+}
+
+.rank-copy small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rank-xp {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rank-xp small {
+  display: block;
+  font-size: 8.5px;
+  letter-spacing: .12em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* ---------------- Papan komunitas di beranda ---------------- */
+
+.community-grid {
+  display: grid;
+  grid-template-columns: 1.02fr 1fr;
+  gap: 12px;
+}
+
+.community-info,
+.community-feed {
+  position: relative;
+  padding: 16px;
+  border-radius: var(--radius-card);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--line));
+  background:
+    linear-gradient(140deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 58%),
+    var(--surface-solid);
+  overflow: hidden;
+}
+
+.community-info::after {
+  content: "";
+  position: absolute;
+  inset: auto -20% -60% auto;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 22%, transparent), transparent 68%);
+  pointer-events: none;
+}
+
+.community-info .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.community-info .kicker .ic {
+  width: 14px;
+  height: 14px;
+  color: var(--accent); --sw: 2.45;}
+
+.community-info h3 {
+  margin-top: 8px;
+  font-size: clamp(18px, 2.2vw, 23px);
+}
+
+.community-info p {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.community-info-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.community-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.community-feed-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.community-feed-head b {
+  font-size: 12.5px;
+}
+
+.community-feed-head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.community-feed-head span i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: rank-pulse 1.8s ease-in-out infinite;
+}
+
+.community-note {
+  display: flex;
+  gap: 9px;
+  padding: 10px 11px;
+  border-radius: 13px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-3) 46%, transparent);
+}
+
+.community-note > .ic {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--accent); --sw: 2.3;}
+
+.community-note b {
+  display: block;
+  font-size: 11.5px;
+}
+
+.community-note p {
+  margin-top: 1px;
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.community-note small {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  color: color-mix(in srgb, var(--muted) 80%, transparent);
+}
+
+.community-empty {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  padding: 18px 10px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  border-radius: 13px;
+  border: 1px dashed var(--line);
+}
+
+.community-empty .ic {
+  width: 20px;
+  height: 20px;
+  color: color-mix(in srgb, var(--accent) 70%, var(--muted)); --sw: 2.05;}
+
+.community-feed-more {
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+/* ---------------- Panel admin ---------------- */
+
+.admin-head {
+  margin-bottom: 16px;
+}
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.admin-stat {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 14px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
+  background:
+    linear-gradient(130deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 66%),
+    var(--surface-solid);
+}
+
+.admin-stat > span {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--accent-ink);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+
+.admin-stat b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.admin-stat small {
+  font-size: 9.5px;
+  color: var(--muted);
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-card {
+  padding: 16px;
+}
+
+.admin-card .card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.admin-card .card-title .ic {
+  width: 18px;
+  height: 18px;
+  color: var(--accent); --sw: 2.15;}
+
+.admin-card .card-sub {
+  margin: 3px 0 12px;
+  font-size: 11px;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.admin-form .field > span {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+
+.admin-form textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.admin-form select {
+  min-height: 42px;
+}
+
+.admin-form .btn {
+  align-self: flex-start;
+}
+
+.admin-list-card {
+  margin-bottom: 8px;
+}
+
+.admin-ann-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.admin-ann {
+  padding: 12px 13px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface-solid);
+  transition: border-color .2s, background .2s;
+}
+
+.admin-ann:hover {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+
+.admin-ann-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-ann-head b {
+  font-size: 12.5px;
+  flex: 1;
+  min-width: 120px;
+}
+
+.admin-ann-time {
+  font-size: 9.5px;
+  color: var(--muted);
+}
+
+.admin-ann-del {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--danger);
+}
+
+.admin-ann p {
+  margin-top: 5px;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.admin-ann small {
+  display: block;
+  margin-top: 5px;
+  font-size: 9.5px;
+  color: color-mix(in srgb, var(--muted) 80%, transparent);
+}
+
+.admin-empty {
+  padding: 24px 12px;
+}
+
+/* ---------------- Responsif ---------------- */
+
+@media (max-width: 860px) {
+  .community-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .admin-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .rank-row {
+    grid-template-columns: 32px 32px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .rank-num {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+  }
+
+  .rank-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .rank-xp {
+    font-size: 12.5px;
+  }
+
+  .admin-stat {
+    padding: 11px 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rank-live,
+  .community-feed-head span i {
+    animation: none;
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NEKO</string>
+    <string name="browser_unavailable">Tidak ada browser HTTPS yang tersedia.</string>
+    <string name="picker_unavailable">Pemilih foto tidak tersedia.</string>
+    <string name="webview_stopped">Tampilan NEKO berhenti. Silakan buka kembali aplikasi.</string>
+</resources>

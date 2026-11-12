@@ -1,0 +1,92 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Never let the Android plugin generate a replacement signing identity.
+def existingDebugKeystore = new File(System.getProperty('user.home'), '.android/debug.keystore')
+if (!existingDebugKeystore.isFile()) {
+    throw new GradleException('Existing default debug.keystore is required; no key will be created.')
+}
+
+android {
+    namespace 'com.neko.tjkt'
+    compileSdk 36
+    buildToolsVersion '36.0.0'
+
+    defaultConfig {
+        applicationId 'com.neko.tjkt'
+        minSdk 24
+        targetSdk 36
+        versionCode 43
+        versionName '3.0.43'
+    }
+    buildFeatures {
+        buildConfig true
+    }
+    signingConfigs {
+        debug {
+            storeFile existingDebugKeystore
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+            debuggable true
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "NEKO-online-${variant.versionName}-${variant.buildType.name}-test.apk"
+        }
+    }
+}
+
+// This project intentionally has no release signing configuration or release artifact.
+androidComponents {
+    beforeVariants(selector().withBuildType('release')) { variantBuilder ->
+        variantBuilder.enable = false
+    }
+}
+
+def webRoot = rootProject.projectDir.parentFile
+// Inputs are only public front-end files. The dedicated output is regenerated on every
+// changed input, so rebuilding after front-end finalization packages the newest UI.
+def syncWebAssets = tasks.register('syncWebAssets', Sync) {
+    def extensions = ['html', 'js', 'css', 'json', 'svg', 'png', 'jpg', 'jpeg',
+                      'webp', 'gif', 'ico', 'woff', 'woff2', 'ttf', 'mp3', 'ogg',
+                      'wav', 'mp4', 'webm', 'pdf']
+    from(webRoot) {
+        include 'index.html', 'favicon.svg', 'manifest.webmanifest'
+        ['css', 'js', 'data', 'assets', 'public/icons'].each { directory ->
+            extensions.each { extension ->
+                include "${directory}/**/*.${extension}"
+            }
+        }
+        exclude '**/.*', '**/node_modules/**', '**/server/**', '**/api/**',
+                '**/backup/**', '**/*backup*', '**/android*/**', '**/build/**',
+                '**/native/**', '**/test/**', '**/tests/**', '**/__tests__/**',
+                '**/*.test.*', '**/*.spec.*', '**/*.dev.*', '**/dev/**',
+                '**/*secret*', '**/*credential*', '**/*private*', '**/keys/**',
+                '**/key.*', '**/*keystore*'
+        eachFile { entry ->
+            // Reject symlinks rather than accidentally following them into non-public data.
+            def expected = new File(webRoot.canonicalFile, entry.relativePath.pathString)
+            if (entry.file.canonicalFile != expected.absoluteFile) {
+                throw new GradleException("Non-regular web asset path: ${entry.relativePath}")
+            }
+        }
+    }
+    into layout.projectDirectory.dir('src/main/assets/neko')
+    includeEmptyDirs = false
+}
+tasks.named('preBuild').configure {
+    dependsOn syncWebAssets
+}

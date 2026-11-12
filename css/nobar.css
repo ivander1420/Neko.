@@ -1,0 +1,335 @@
+/* ============================================================
+   NEKO · css/nobar.css
+   Pelengkap gaya Nobar (nonton bareng YouTube) ala Discord.
+   Tata letak utama ada di css/rooms.css (.nobar-inner, .nobar-screen,
+   .nobar-side, dll). Berkas ini menambah komponen yang belum ada:
+   bilah suara, catatan video, blok gabung, daftar room aktif,
+   indikator berbicara, dan penjaga [hidden] agar panel tab benar.
+   ============================================================ */
+
+/* Penjaga: elemen ber-[hidden] di dalam nobar wajib hilang,
+   meski rules lain menetapkan display (grid/flex). Tanpa ini,
+   panel chat & cari tampil bersamaan karena display:grid menang
+   atas [hidden] bawaan browser. */
+.nobar-layer [hidden] { display: none !important; }
+
+/* Shell nobar lebih lebar; tinggi mengikuti konten dengan batas maks
+   dan gulir internal, supaya layar video tidak pernah kolaps/tertumpuk
+   di layar pendek. Grid internal yang mengatur gulir panel. */
+.nobar-layer .room-shell {
+  width: min(1400px, 100%);
+  max-height: min(94vh, 920px);
+  overflow: auto;
+}
+
+/* Jaring pengaman: layar video selalu punya tinggi wajar. */
+.nobar-screen { min-height: 160px; }
+
+/* ---------------- Sheet buat/gabung room ---------------- */
+
+.sheet.nobar-sheet {
+  width: min(960px, 98vw);
+  max-height: min(92dvh, 880px);
+}
+
+.nobar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.nobar-actions .btn {
+  flex: 1;
+  justify-content: center;
+  min-width: 120px;
+  font-size: clamp(11.5px, 2.7vw, 13px);
+  padding: 8px clamp(10px, 2.2vw, 16px);
+  white-space: nowrap;
+}
+
+.nobar-join-block {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.nobar-active { display: grid; gap: 8px; }
+.nobar-active-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---------------- Catatan / error di atas layar video ---------------- */
+
+.nobar-video-note {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  overflow: auto;
+  padding: 28px;
+  text-align: center;
+  background: rgba(0, 0, 0, .85);
+  color: #fff;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+/* ---------------- Bilah suara (mic / deafen / status) ---------------- */
+
+.nobar-voicebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 2px 0;
+}
+
+.nobar-voice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .18s, border-color .18s, color .18s, transform .15s;
+}
+
+.nobar-voice-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+.nobar-voice-btn .ic, .nobar-voice-btn svg { width: 16px; height: 16px; }
+
+.nobar-voice-btn[data-nobar-mic].on {
+  background: color-mix(in srgb, var(--success, #22c55e) 20%, var(--surface-2));
+  border-color: var(--success, #22c55e);
+  color: var(--ink);
+}
+
+.nobar-voice-btn[data-nobar-deafen].on {
+  background: color-mix(in srgb, var(--danger) 18%, var(--surface-2));
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.nobar-voice-status { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+
+/* ---------------- Indikator penonton yang sedang berbicara ---------------- */
+
+.nobar-viewer.is-speaking {
+  border-color: var(--success, #22c55e);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success, #22c55e) 26%, transparent);
+}
+
+.nobar-viewer.is-speaking .nobar-avatar {
+  box-shadow: 0 0 0 2px var(--success, #22c55e);
+}
+
+/* ---------------- Responsif ---------------- */
+
+@media (max-width: 700px) {
+  .nobar-layer .room-shell { max-height: 96vh; }
+  .nobar-voicebar { gap: 8px; }
+  .nobar-voice-btn { padding: 8px 13px; font-size: 12px; }
+  .nobar-voice-btn span { display: none; }
+  .nobar-voice-status { flex-basis: 100%; text-align: center; order: 3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nobar-voice-btn, .nobar-viewer.is-speaking { transition: none !important; }
+}
+
+/* ---------------- Jelajah YouTube bawaan (kartu video) ---------------- */
+
+.nobar-yt-label { display: inline-flex; align-items: center; gap: 8px; }
+.nobar-yt-logo {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 18px; border-radius: 5px;
+  background: #ff0033; color: #fff; flex: none;
+}
+.nobar-yt-logo .ic, .nobar-yt-logo svg { width: 11px; height: 11px; }
+.nobar-yt-brand {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px 0;
+  font-family: var(--font-display); font-weight: 800; font-size: 14px; color: var(--ink);
+}
+.nobar-search-head { display: grid; }
+.nobar-search-head .nobar-search-box { border-bottom: 1px solid var(--line); }
+
+.nobar-browse-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+  max-height: min(60vh, 520px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 4px;
+}
+.nobar-browse-results .nobar-search-empty { grid-column: 1 / -1; }
+
+.nobar-search-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  padding: 12px;
+  overflow-y: auto;
+  align-content: start;
+  scrollbar-width: thin;
+}
+
+.nobar-video-card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .18s, transform .18s, box-shadow .18s;
+  width: 100%;
+  height: 100%;
+}
+.nobar-video-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.nobar-video-card.on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 26%, transparent);
+}
+.nobar-vc-thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+}
+.nobar-vc-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .25s var(--ease-out);
+}
+.nobar-video-card:hover .nobar-vc-thumb img {
+  transform: scale(1.04);
+}
+.nobar-vc-dur {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, .82);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.nobar-vc-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px 10px;
+  min-width: 0;
+  flex: 1;
+  justify-content: space-between;
+}
+.nobar-vc-meta b {
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 700;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--ink);
+}
+.nobar-vc-meta small {
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nobar-screen-lock {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 10px;
+  pointer-events: auto;
+  cursor: default;
+  background: transparent;
+}
+.nobar-lock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, .80);
+  color: #fbbf24;
+  font-size: 11px;
+  font-weight: 700;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .45);
+  border: 1px solid rgba(251, 191, 36, .35);
+}
+.nobar-lock-badge .ic, .nobar-lock-badge svg { width: 13px; height: 13px; }
+
+.nobar-search-host-note {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.nobar-search-host-note .ic, .nobar-search-host-note svg { width: 14px; height: 14px; color: #fbbf24; }
+
+@media (max-width: 560px) {
+  .nobar-browse-results {
+    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+    gap: 10px;
+    max-height: min(62vh, 480px);
+  }
+  .nobar-search-results {
+    grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+    gap: 8px;
+    padding: 8px;
+  }
+}
+
+/* ---------------- Layar video premium & fullscreen bersih ---------------- */
+
+.nobar-video-wrap { padding: 4px 0; }
+.nobar-screen { border-radius: 18px; }
+.nobar-screen.is-fs { border-radius: 0; background: #000; }
+.nobar-screen.is-fs iframe { width: 100%; height: 100%; }

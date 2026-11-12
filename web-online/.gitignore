@@ -1,0 +1,56 @@
+# ============================================================
+# NEKO · .gitignore
+# Aturan: kredensial, data akun siswa, dan hasil build tidak
+# pernah masuk repository. File contoh (.env.example) tetap ikut.
+# ============================================================
+
+# --- Kredensial & konfigurasi rahasia ---------------------------------------
+**/.env
+**/.env.bak
+**/.env.local
+**/.env.production
+**/secrets*
+**/*.keystore
+**/*.jks
+**/*.p12
+
+# --- Data pengguna (akun, progres, chat) -----------------------------------
+**/db.json
+**/db.json.bak
+**/db backup.json
+**/db backup*.json
+**/*.sqlite
+**/*.db
+backup-supabase-intro/
+
+# --- Salinan proyek lama di dalam folder ini ---------------------------------
+Neko Fix/
+Neko Fix - Copy/
+
+# --- Log & file sementara ----------------------------------------------------
+*.log
+server/tmp-*.js
+sync-boot.log
+**/*.bak
+server/db backup.json
+
+# --- Alat / dependensi / hasil build -----------------------------------------
+node_modules/
+.vercel/
+.DS_Store
+Thumbs.db
+
+# Hasil build APK
+android-apk/app/build/
+android-apk/.gradle/
+android-apk/local.properties
+build/
+*.apk
+
+# Kemasan siap unggah + tempat kerja sementara (jangan ikut ke repo)
+dist/*.zip
+.qa-tmp/
+docs/bukti/
+
+.vercel
+.env*

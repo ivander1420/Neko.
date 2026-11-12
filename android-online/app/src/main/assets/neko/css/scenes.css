@@ -1,0 +1,1407 @@
+/* ============================================================
+   NEKO · scenes.css
+   Latar animasi untuk setiap dunia tema.
+   ============================================================ */
+
+#scene::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 42%;
+  background: linear-gradient(180deg, transparent, var(--bg));
+  pointer-events: none;
+  z-index: 4;
+}
+
+.scene-inner {
+  position: absolute;
+  inset: 0;
+}
+
+/* ============================================================
+   DEFAULT — jaringan & komputer
+   ============================================================ */
+
+.s-default {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(90% 70% at 12% 8%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 55%),
+    radial-gradient(80% 70% at 92% 20%, color-mix(in srgb, var(--accent-2) 13%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--bg), var(--bg-2));
+}
+
+.sd-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(64px);
+  opacity: .45;
+  animation: orb-drift 22s ease-in-out infinite alternate;
+}
+
+.sd-orb.a {
+  width: 44vmax;
+  height: 44vmax;
+  left: -16vmax;
+  top: -18vmax;
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.sd-orb.b {
+  width: 34vmax;
+  height: 34vmax;
+  right: -12vmax;
+  top: 18vh;
+  background: color-mix(in srgb, var(--accent-2) 32%, transparent);
+  animation-delay: -7s;
+}
+
+.sd-orb.c {
+  width: 30vmax;
+  height: 30vmax;
+  left: 28vw;
+  bottom: -14vmax;
+  background: color-mix(in srgb, var(--accent-3) 20%, transparent);
+  animation-delay: -13s;
+}
+
+@keyframes orb-drift {
+  to { transform: translate(7vw, 5vh) scale(1.16); }
+}
+
+.sd-grid {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  bottom: -8%;
+  height: 62%;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--accent) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, transparent) 1px, transparent 1px);
+  background-size: 52px 52px;
+  transform: perspective(420px) rotateX(62deg);
+  transform-origin: bottom;
+  mask-image: linear-gradient(180deg, transparent, #000 45%, #000);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 45%, #000);
+  opacity: .55;
+  animation: grid-move 12s linear infinite;
+}
+
+@keyframes grid-move {
+  to { background-position: 0 52px, 52px 0; }
+}
+
+.sd-float {
+  position: absolute;
+  color: color-mix(in srgb, var(--accent) 65%, transparent);
+  opacity: .3;
+  font-size: clamp(28px, 4.6vw, 58px);
+  --sw: 1.35;
+  animation: float-y 8s ease-in-out infinite;
+  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 28%, transparent));
+}
+
+.sd-float.f1 { left: 6%; top: 24%; --tilt: -6deg; }
+.sd-float.f2 { right: 7%; top: 18%; --tilt: 8deg; animation-delay: -2.4s; }
+.sd-float.f3 { left: 12%; bottom: 20%; --tilt: 5deg; animation-delay: -4.8s; }
+.sd-float.f4 { right: 14%; bottom: 26%; --tilt: -4deg; animation-delay: -6.2s; }
+.sd-float.f5 { left: 46%; top: 10%; opacity: .16; animation-delay: -3s; }
+
+.sd-particles i {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: .5;
+  animation: particle-rise var(--dur, 12s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes particle-rise {
+  0% { transform: translateY(20px); opacity: 0; }
+  15% { opacity: .65; }
+  100% { transform: translateY(-46vh); opacity: 0; }
+}
+
+/* ============================================================
+   FOREST — hutan, gunung, burung
+   ============================================================ */
+
+.s-forest {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--bg-2), var(--bg) 68%);
+}
+
+html[data-theme="forest"][data-mode="light"] .s-forest {
+  background: linear-gradient(180deg, #cdeeff 0%, #e8f6d8 45%, #d8eec2 100%);
+}
+
+.sf-sun {
+  position: absolute;
+  right: 11%;
+  top: 8%;
+  width: clamp(80px, 12vw, 150px);
+  height: clamp(80px, 12vw, 150px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 38%, #fff7d1, #ffd166 55%, rgba(255, 180, 60, 0) 72%);
+  filter: blur(2px);
+  opacity: .9;
+  animation: sun-glow 6s ease-in-out infinite;
+}
+
+html[data-theme="forest"][data-mode="dark"] .sf-sun {
+  opacity: .35;
+  background: radial-gradient(circle at 40% 38%, #fff9dd, #8fd9a8 55%, transparent 72%);
+}
+
+@keyframes sun-glow {
+  50% { transform: scale(1.06); filter: blur(4px); }
+}
+
+/* --- Palet dunia hutan: semua bentuk di bawah memakai variabel ini,
+       jadi gunung/awan/pohon ikut berubah saat tema atau mode berganti. --- */
+
+.s-forest {
+  --mtn-far: #6f9db8;
+  --mtn-far-shade: #4e7691;
+  --mtn-mid: #4f8a63;
+  --mtn-mid-shade: #2f5f42;
+  --mtn-near: #2f6b49;
+  --mtn-near-shade: #14392a;
+  --mtn-snow: #f4fbff;
+  --mtn-snow-shade: #c9dfef;
+  --mtn-haze: #d8ecf5;
+  --mtn-edge: rgba(255, 255, 255, .55);
+  --cloud-mid: #eaf3fb;
+  --cloud-lo: #b9cfe2;
+  --cloud-hi: #ffffff;
+  --pine-lit: #4e9d6b;
+  --pine-dark: #14402c;
+  --pine-trunk: #5a3c26;
+  --hill-lit: #35784f;
+  --hill-dark: #123222;
+}
+
+html[data-theme="forest"][data-mode="light"] .s-forest {
+  --mtn-far: #a8c6dd;
+  --mtn-far-shade: #86a9c4;
+  --mtn-mid: #78b78d;
+  --mtn-mid-shade: #5b9673;
+  --mtn-near: #5aa46f;
+  --mtn-near-shade: #3c7f52;
+  --mtn-snow: #ffffff;
+  --mtn-snow-shade: #dbeaf7;
+  --mtn-haze: #eaf6ff;
+  --mtn-edge: rgba(255, 255, 255, .8);
+  --cloud-mid: #ffffff;
+  --cloud-lo: #d7e6f4;
+  --cloud-hi: #ffffff;
+  --pine-lit: #74c26a;
+  --pine-dark: #33754a;
+  --pine-trunk: #8a5a36;
+  --hill-lit: #9ed97f;
+  --hill-dark: #4f9350;
+}
+
+/* Awan kartun: tiga lapis (bayang, badan, kilau) supaya tampak menggembung. */
+.sf-cloud,
+.sc-cloud,
+.son-cloud {
+  height: auto;
+  filter: blur(.4px) drop-shadow(0 10px 18px rgba(10, 30, 40, .12));
+}
+
+.sf-cloud {
+  position: absolute;
+  left: -26%;
+  top: var(--top, 14%);
+  width: var(--w, 220px);
+  opacity: var(--op, .7);
+  animation: cloud-drift var(--dur, 62s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.cl-mid { fill: var(--cloud-mid, #fff); }
+.cl-lo { fill: var(--cloud-lo, #bfd3e6); }
+.cl-hi { fill: var(--cloud-hi, #fff); opacity: .85; }
+
+@keyframes cloud-drift {
+  to { transform: translateX(158vw); }
+}
+
+/* Gunung: punggungan melengkung + sisi berbayang + topi salju + kabut di kaki.
+   Ketiganya selebar layar supaya tidak ada tepi kotak yang terpotong. */
+.sf-mountain {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  max-width: none;
+}
+
+.sf-mountain.m1 {
+  bottom: 13%;
+  height: 46vh;
+  opacity: .62;
+}
+
+.sf-mountain.m2 {
+  bottom: 5%;
+  height: 52vh;
+  opacity: .8;
+}
+
+.sf-mountain.m3 {
+  bottom: -1%;
+  height: 44vh;
+}
+
+html[data-theme="forest"][data-mode="light"] .sf-mountain.m1 { opacity: .5; }
+html[data-theme="forest"][data-mode="light"] .sf-mountain.m2 { opacity: .68; }
+html[data-theme="forest"][data-mode="light"] .sf-mountain.m3 { opacity: .88; }
+
+.m1 .mt-body { fill: var(--mtn-far); }
+.m1 .mt-shade { fill: var(--mtn-far-shade); }
+.m2 .mt-body { fill: var(--mtn-mid); }
+.m2 .mt-shade { fill: var(--mtn-mid-shade); }
+.m3 .mt-body { fill: var(--mtn-near); }
+.m3 .mt-shade { fill: var(--mtn-near-shade); }
+
+.mt-shade { opacity: .5; }
+.mt-snow { fill: var(--mtn-snow); }
+.mt-line { fill: none; stroke: var(--mtn-snow-shade); stroke-width: 3; stroke-linecap: round; opacity: .5; }
+.mt-edge { fill: none; stroke: var(--mtn-edge); stroke-width: 2.4; opacity: .6; }
+
+.m1 .mt-snow { fill: var(--mtn-snow); opacity: .75; }
+.m3 .mt-snow { opacity: .96; }
+
+.sf-hill {
+  position: absolute;
+  left: 0;
+  bottom: -4%;
+  width: 100%;
+  max-width: none;
+  height: 32%;
+}
+
+.hill-edge {
+  fill: none;
+  stroke: color-mix(in srgb, var(--hill-lit) 70%, #fff);
+  stroke-width: 3;
+  opacity: .5;
+}
+
+.sf-trees {
+  position: absolute;
+  inset: 0;
+}
+
+.sf-tree {
+  position: absolute;
+  bottom: 8%;
+  left: var(--x, 10%);
+  width: calc(64px * var(--s, 1));
+  height: calc(168px * var(--s, 1));
+  transform-origin: bottom center;
+  animation: tree-sway var(--sway, 7s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+  opacity: var(--op, .85);
+  filter: drop-shadow(0 10px 14px rgba(8, 30, 20, .22));
+}
+
+.sf-tree .sf-pine {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pt-trunk { fill: var(--pine-trunk); }
+.pt-shadow { fill: rgba(6, 26, 18, .28); }
+
+@keyframes tree-sway {
+  0%, 100% { transform: rotate(-1.2deg); }
+  50% { transform: rotate(1.4deg); }
+}
+
+.sf-bird {
+  position: absolute;
+  left: -12%;
+  top: var(--y, 22%);
+  width: calc(26px * var(--s, 1));
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+  animation: bird-fly var(--dur, 26s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  opacity: var(--op, .55);
+}
+
+.sf-bird:nth-child(even) {
+  transform: scaleX(-1);
+}
+
+@keyframes bird-fly {
+  0% { transform: translateX(0) translateY(0) scaleX(var(--flip, 1)); }
+  25% { transform: translateX(28vw) translateY(-26px) scaleX(var(--flip, 1)); }
+  50% { transform: translateX(52vw) translateY(14px) scaleX(var(--flip, 1)); }
+  75% { transform: translateX(78vw) translateY(-18px) scaleX(var(--flip, 1)); }
+  100% { transform: translateX(120vw) translateY(4px) scaleX(var(--flip, 1)); }
+}
+
+.sf-leaf {
+  position: absolute;
+  top: -6%;
+  left: var(--x, 20%);
+  width: 13px;
+  height: 9px;
+  border-radius: 60% 10% 60% 10%;
+  background: color-mix(in srgb, var(--accent) 65%, #4b8a3f);
+  opacity: .45;
+  animation: leaf-fall var(--dur, 18s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes leaf-fall {
+  0% { transform: translateY(-10vh) rotate(0); opacity: 0; }
+  10% { opacity: .55; }
+  100% { transform: translateY(110vh) translateX(18vw) rotate(540deg); opacity: 0; }
+}
+
+.sf-firefly {
+  position: absolute;
+  left: var(--x, 50%);
+  top: var(--y, 60%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ffe58a;
+  box-shadow: 0 0 12px 3px rgba(255, 229, 138, .45);
+  animation: firefly var(--dur, 6s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+  opacity: .2;
+}
+
+@keyframes firefly {
+  0%, 100% { opacity: .1; transform: translate(0, 0); }
+  50% { opacity: .85; transform: translate(12px, -14px); }
+}
+
+/* ============================================================
+   OCEAN — versi terang: bawah laut penuh
+   ============================================================ */
+
+.s-ocean {
+  position: absolute;
+  inset: 0;
+  --sand-lit: #ffe0a6;
+  --sand-dark: #d9a55f;
+  background:
+    radial-gradient(90% 60% at 50% 0%, rgba(255, 255, 255, .7), transparent 55%),
+    linear-gradient(180deg, #8be9ff 0%, #4fc7e8 26%, #1788b8 62%, #06466c 100%);
+}
+
+.so-rays {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: .5;
+}
+
+.so-rays i {
+  position: absolute;
+  top: -10%;
+  left: var(--x, 20%);
+  width: var(--w, 8vw);
+  height: 120%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .8), transparent 78%);
+  transform-origin: top center;
+  transform: rotate(var(--r, 8deg));
+  filter: blur(6px);
+  animation: ray-sway 9s ease-in-out infinite alternate;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes ray-sway {
+  to { transform: rotate(calc(var(--r, 8deg) * -1)) translateX(2vw); opacity: .6; }
+}
+
+.so-seabed {
+  position: absolute;
+  left: -5%;
+  bottom: -2%;
+  width: 110%;
+  height: 20%;
+}
+
+.sb-rim {
+  fill: none;
+  stroke: color-mix(in srgb, var(--sand-lit) 70%, #fff);
+  stroke-width: 4;
+  opacity: .55;
+}
+
+.sb-pebble {
+  fill: color-mix(in srgb, var(--sand-dark) 78%, #6b4a22);
+  opacity: .5;
+}
+
+.so-seaweed {
+  position: absolute;
+  bottom: 6%;
+  left: var(--x, 10%);
+  width: 12px;
+  height: var(--h, 120px);
+  background: linear-gradient(180deg, #2fbf7f, #0b6b4d);
+  border-radius: 60% 40% 40% 60%;
+  transform-origin: bottom;
+  animation: seaweed-sway var(--dur, 5s) ease-in-out infinite alternate;
+  opacity: .75;
+}
+
+@keyframes seaweed-sway {
+  to { transform: skewX(-12deg) scaleY(1.08); }
+}
+
+.so-fish {
+  position: absolute;
+  top: var(--y, 40%);
+  left: -12%;
+  width: calc(58px * var(--s, 1));
+  color: var(--fish, #ffb74d);
+  animation: fish-swim var(--dur, 22s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  opacity: var(--op, .9);
+  filter: drop-shadow(0 8px 12px rgba(0, 30, 50, .18));
+}
+
+.so-fish[data-dir="left"] {
+  left: auto;
+  right: -12%;
+  animation-name: fish-swim-left;
+}
+
+@keyframes fish-swim {
+  0% { transform: translateX(0) translateY(0) scaleX(1); }
+  25% { transform: translateX(32vw) translateY(-16px); }
+  50% { transform: translateX(58vw) translateY(10px); }
+  75% { transform: translateX(86vw) translateY(-10px); }
+  100% { transform: translateX(125vw) translateY(4px); }
+}
+
+@keyframes fish-swim-left {
+  0% { transform: translateX(0) translateY(0) scaleX(-1); }
+  25% { transform: translateX(-32vw) translateY(14px) scaleX(-1); }
+  50% { transform: translateX(-58vw) translateY(-12px) scaleX(-1); }
+  75% { transform: translateX(-86vw) translateY(8px) scaleX(-1); }
+  100% { transform: translateX(-125vw) translateY(-4px) scaleX(-1); }
+}
+
+.so-fish .fish-tail {
+  transform-origin: 15px 24px;
+  animation: tail-wag .8s ease-in-out infinite alternate;
+}
+
+@keyframes tail-wag {
+  to { transform: rotate(12deg); }
+}
+
+.so-bubble {
+  position: absolute;
+  bottom: -6%;
+  left: var(--x, 50%);
+  width: var(--w, 9px);
+  height: var(--w, 9px);
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, .6);
+  background: rgba(255, 255, 255, .16);
+  animation: bubble-rise var(--dur, 14s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  opacity: 0;
+}
+
+@keyframes bubble-rise {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  10% { opacity: .7; }
+  50% { transform: translateY(-50vh) translateX(14px); }
+  100% { transform: translateY(-105vh) translateX(-8px); opacity: 0; }
+}
+
+.so-jelly {
+  position: absolute;
+  top: var(--y, 20%);
+  left: var(--x, 20%);
+  width: 46px;
+  color: rgba(255, 190, 240, .7);
+  animation: jelly-float var(--dur, 12s) ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 12px rgba(255, 170, 240, .35));
+}
+
+@keyframes jelly-float {
+  to { transform: translate(10px, -34px) rotate(4deg); }
+}
+
+.so-turtle {
+  position: absolute;
+  right: 12%;
+  top: 16%;
+  width: 88px;
+  color: #2c7d63;
+  opacity: .45;
+  animation: turtle-drift 30s ease-in-out infinite alternate;
+}
+
+@keyframes turtle-drift {
+  to { transform: translate(-28vw, 8vh) rotate(-6deg); }
+}
+
+.so-floor-star {
+  position: absolute;
+  bottom: 4%;
+  left: 10%;
+  width: 30px;
+  color: #ff8a5c;
+  opacity: .85;
+  animation: twinkle 4s ease-in-out infinite;
+}
+
+.so-coral {
+  position: absolute;
+  bottom: 5%;
+  right: 8%;
+  width: 74px;
+  color: #ff7a9c;
+  opacity: .75;
+  transform-origin: bottom;
+  animation: coral-breathe 6s ease-in-out infinite alternate;
+}
+
+@keyframes coral-breathe {
+  to { transform: scaleY(1.08) rotate(2deg); }
+}
+
+/* ============================================================
+   OCEAN — versi gelap: langit malam + separuh laut
+   ============================================================ */
+
+.s-ocean-night {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #04101f 0%, #0a2440 42%, #062036 52%, #02101d 100%);
+}
+
+.son-sky {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 52%;
+  background:
+    radial-gradient(60% 50% at 74% 30%, rgba(80, 140, 220, .18), transparent 70%),
+    linear-gradient(180deg, #04101f, #0a2440);
+  overflow: hidden;
+}
+
+.son-moon {
+  position: absolute;
+  right: 16%;
+  top: 18%;
+  width: clamp(54px, 8vw, 92px);
+  height: clamp(54px, 8vw, 92px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #fffdf2, #ffe9b0 56%, #c9a86a);
+  box-shadow: 0 0 60px 18px rgba(255, 235, 180, .2);
+  animation: moon-drift 12s ease-in-out infinite;
+}
+
+.son-moon::before,
+.son-moon::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(170, 140, 90, .25);
+}
+
+.son-moon::before { width: 18%; height: 18%; left: 22%; top: 44%; }
+.son-moon::after { width: 12%; height: 12%; right: 24%; top: 24%; }
+
+@keyframes moon-drift {
+  50% { transform: translateY(-6px); box-shadow: 0 0 74px 22px rgba(255, 235, 180, .24); }
+}
+
+.son-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: .6;
+  animation: star-twinkle var(--dur, 4s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes star-twinkle {
+  0%, 100% { opacity: .2; transform: scale(.7); }
+  50% { opacity: .95; transform: scale(1.25); }
+}
+
+.son-cloud {
+  position: absolute;
+  right: -26%;
+  top: var(--top, 30%);
+  width: var(--w, 200px);
+  opacity: var(--op, .4);
+  animation: cloud-night var(--dur, 76s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.s-ocean-night {
+  --cloud-mid: #93b6dd;
+  --cloud-lo: #5d7ba8;
+  --cloud-hi: #dbe9ff;
+}
+
+@keyframes cloud-night {
+  to { transform: translateX(-158vw); }
+}
+
+.son-wave {
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  top: 48%;
+  height: 64px;
+  background:
+    radial-gradient(50% 100% at 50% 0%, rgba(120, 220, 255, .2), transparent 70%),
+    linear-gradient(180deg, rgba(70, 170, 210, .35), transparent);
+  border-top: 1px solid rgba(150, 235, 255, .35);
+  border-radius: 50% 50% 0 0;
+  animation: wave-bob 8s ease-in-out infinite;
+}
+
+.son-wave.w2 {
+  top: 50%;
+  opacity: .5;
+  animation-delay: -3s;
+  transform: scaleX(-1);
+}
+
+@keyframes wave-bob {
+  50% { transform: translateY(7px) scaleY(.9); }
+}
+
+.son-under {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 52%;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(8, 50, 78, .6), rgba(1, 10, 20, .95));
+  overflow: hidden;
+}
+
+.son-under::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: 10%;
+  width: 34vw;
+  height: 90%;
+  background: linear-gradient(180deg, rgba(120, 220, 255, .18), transparent 70%);
+  transform: rotate(8deg);
+  filter: blur(10px);
+}
+
+.son-fish {
+  position: absolute;
+  top: var(--y, 40%);
+  left: -12%;
+  width: calc(44px * var(--s, 1));
+  color: rgba(120, 220, 250, .35);
+  animation: fish-swim var(--dur, 24s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.son-fish[data-dir="left"] {
+  left: auto;
+  right: -12%;
+  animation-name: fish-swim-left;
+}
+
+/* ============================================================
+   CANDY — pink, arena boneka, pita, hati
+   ============================================================ */
+
+.s-candy {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(70% 50% at 80% 8%, rgba(255, 255, 255, .6), transparent 60%),
+    linear-gradient(165deg, #ffe6f2 0%, #ffd0e6 38%, #f7c4f0 70%, #ffe9f4 100%);
+}
+
+html[data-theme="candy"][data-mode="dark"] .s-candy {
+  background:
+    radial-gradient(70% 50% at 80% 8%, rgba(255, 120, 180, .14), transparent 60%),
+    linear-gradient(165deg, #2a0f20 0%, #43192f 45%, #2e1127 100%);
+}
+
+.sc-cloud {
+  position: absolute;
+  left: var(--x, 10%);
+  top: var(--y, 10%);
+  width: var(--w, 200px);
+  opacity: var(--op, .55);
+  animation: cloud-candy var(--dur, 44s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.s-candy {
+  --cloud-mid: #ffffff;
+  --cloud-lo: #f3c3dc;
+  --cloud-hi: #ffffff;
+}
+
+html[data-theme="candy"][data-mode="dark"] .s-candy {
+  --cloud-mid: #8a5f7d;
+  --cloud-lo: #5d3a55;
+  --cloud-hi: #f8cfe4;
+}
+
+@keyframes cloud-candy {
+  to { transform: translateX(120vw); }
+}
+
+.sc-bow {
+  position: absolute;
+  left: var(--x, 10%);
+  top: var(--y, 16%);
+  width: var(--s, 70px);
+  height: calc(var(--s, 70px) * .6);
+  opacity: var(--op, .42);
+  animation: bow-sway var(--dur, 8s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+  color: var(--accent);
+}
+
+@keyframes bow-sway {
+  0%, 100% { transform: rotate(-8deg) translateY(0); }
+  50% { transform: rotate(8deg) translateY(-12px); }
+}
+
+.sc-heart {
+  position: absolute;
+  left: var(--x, 20%);
+  top: var(--y, 30%);
+  width: calc(26px * var(--s, 1));
+  color: var(--hc, #ff8cbd);
+  opacity: .45;
+  animation: heart-float var(--dur, 14s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes heart-float {
+  0% { transform: translateY(20vh) scale(.6) rotate(-8deg); opacity: 0; }
+  12% { opacity: .55; }
+  100% { transform: translateY(-110vh) scale(1.1) rotate(10deg); opacity: 0; }
+}
+
+.sc-sparkle {
+  position: absolute;
+  left: var(--x, 50%);
+  top: var(--y, 50%);
+  width: 14px;
+  height: 14px;
+  color: #fff;
+  opacity: .8;
+  animation: twinkle var(--dur, 3.4s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.sc-bear {
+  position: absolute;
+  left: 3%;
+  bottom: 4%;
+  width: clamp(88px, 11vw, 150px);
+  color: #e9a7c4;
+  opacity: .55;
+  transform-origin: bottom;
+  animation: plush-bob 6s ease-in-out infinite;
+}
+
+.sc-bunny {
+  position: absolute;
+  right: 3%;
+  bottom: 5%;
+  width: clamp(74px, 9vw, 130px);
+  color: #f4b9d4;
+  opacity: .5;
+  transform-origin: bottom;
+  animation: plush-bob 7s ease-in-out infinite reverse;
+}
+
+html[data-theme="candy"][data-mode="dark"] .sc-bear,
+html[data-theme="candy"][data-mode="dark"] .sc-bunny {
+  opacity: .22;
+}
+
+@keyframes plush-bob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-8px) rotate(3deg); }
+}
+
+.sc-ribbon {
+  position: absolute;
+  top: 0;
+  left: var(--x, 30%);
+  width: 8px;
+  height: 42vh;
+  background: linear-gradient(180deg, rgba(255, 110, 170, .35), transparent);
+  border-radius: 99px;
+  transform: rotate(var(--r, 12deg));
+  animation: ribbon-sway 7s ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes ribbon-sway {
+  50% { transform: rotate(calc(var(--r, 12deg) * -0.6)) translateX(8px); }
+}
+
+/* ============================================================
+   RED — lab merah, sirkuit, percikan
+   ============================================================ */
+
+.s-red {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(70% 60% at 82% 12%, rgba(255, 70, 70, .2), transparent 60%),
+    radial-gradient(60% 50% at 10% 86%, rgba(255, 120, 40, .14), transparent 65%),
+    linear-gradient(165deg, #160609, #25080d 48%, #120407);
+}
+
+.sr-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 90, 90, .12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 90, 90, .12) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(70% 70% at 50% 40%, #000, transparent 80%);
+  -webkit-mask-image: radial-gradient(70% 70% at 50% 40%, #000, transparent 80%);
+  opacity: .5;
+}
+
+.sr-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -20%;
+  height: 30%;
+  background: linear-gradient(180deg, transparent, rgba(255, 70, 70, .12), transparent);
+  animation: scan-down 7s linear infinite;
+}
+
+@keyframes scan-down {
+  to { transform: translateY(180vh); }
+}
+
+.sr-rack {
+  position: absolute;
+  bottom: 8%;
+  left: var(--x, 12%);
+  width: 64px;
+  height: 180px;
+  border: 1px solid rgba(255, 90, 90, .22);
+  border-radius: 7px;
+  background: rgba(40, 8, 12, .5);
+  opacity: .6;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 6px;
+}
+
+.sr-rack i {
+  flex: 1;
+  border-radius: 3px;
+  background: rgba(255, 70, 70, .12);
+  position: relative;
+}
+
+.sr-rack i::after {
+  content: "";
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ff4d5e;
+  box-shadow: 0 0 8px #ff4d5e;
+  animation: led-blink 1.8s steps(1) infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes led-blink {
+  50% { opacity: .15; }
+}
+
+.sr-circuit {
+  position: absolute;
+  inset: 0;
+  color: rgba(255, 90, 80, .25);
+  opacity: .7;
+}
+
+.sr-circuit path {
+  stroke-dasharray: 8 10;
+  animation: circuit-run 5s linear infinite;
+}
+
+@keyframes circuit-run {
+  to { stroke-dashoffset: -180; }
+}
+
+.sr-spark {
+  position: absolute;
+  left: var(--x, 50%);
+  top: var(--y, 40%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #ff9a5c;
+  box-shadow: 0 0 10px 2px rgba(255, 120, 70, .55);
+  animation: spark-pop var(--dur, 3s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes spark-pop {
+  0%, 100% { opacity: 0; transform: scale(.4); }
+  50% { opacity: 1; transform: scale(1.4) translateY(-10px); }
+}
+
+.sr-beam {
+  position: absolute;
+  right: 2%;
+  top: -10%;
+  width: 200px;
+  height: 120%;
+  background: linear-gradient(180deg, rgba(255, 70, 70, .18), transparent 70%);
+  transform: rotate(16deg);
+  filter: blur(16px);
+  animation: beam-sway 9s ease-in-out infinite;
+}
+
+@keyframes beam-sway {
+  50% { transform: rotate(10deg) translateX(-4vw); opacity: .7; }
+}
+
+/* ============================================================
+   CAR — sirkuit balap malam
+   ============================================================ */
+
+.s-car {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 40% at 82% 10%, rgba(80, 130, 255, .18), transparent 65%),
+    linear-gradient(180deg, #07080f 0%, #111522 46%, #0a0c14 46.5%, #05060a 100%);
+  overflow: hidden;
+}
+
+.sk-stars {
+  position: absolute;
+  inset: 0 0 54%;
+}
+
+.sk-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: .5;
+  animation: star-twinkle var(--dur, 4s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.sk-moon {
+  position: absolute;
+  right: 12%;
+  top: 10%;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 34%, #fffbe8, #e8d49a 60%, #a88b52);
+  box-shadow: 0 0 40px 12px rgba(255, 234, 170, .15);
+}
+
+.sk-skyline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 46%;
+  height: 20%;
+  color: #0c101c;
+  opacity: .95;
+}
+
+.sk-skyline i {
+  position: absolute;
+  bottom: 0;
+  left: var(--x, 10%);
+  width: var(--w, 9%);
+  height: var(--h, 70%);
+  background: linear-gradient(180deg, #151a28, #0a0d16);
+  border-radius: 3px 3px 0 0;
+}
+
+.sk-skyline i::after {
+  content: "";
+  position: absolute;
+  inset: 12% 18% 20%;
+  background-image:
+    linear-gradient(rgba(255, 220, 150, .5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 220, 150, .5) 1px, transparent 1px);
+  background-size: 7px 8px;
+  opacity: .35;
+}
+
+.sk-road {
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  bottom: 0;
+  height: 46%;
+  background: linear-gradient(180deg, #14161e, #0a0b10 60%, #050609);
+  border-top: 3px solid rgba(255, 255, 255, .1);
+  clip-path: polygon(0 18%, 100% 18%, 108% 100%, -8% 100%);
+  overflow: hidden;
+}
+
+.sk-road::before {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: 32%;
+  height: 5%;
+  background: linear-gradient(90deg, var(--accent) 0 8%, transparent 8% 16%, var(--accent) 16% 24%, transparent 24% 32%, var(--accent) 32% 40%, transparent 40% 48%, var(--accent) 48% 56%, transparent 56% 64%, var(--accent) 64% 72%, transparent 72% 80%, var(--accent) 80% 88%, transparent 88%);
+  opacity: .7;
+  animation: road-dash 1.1s linear infinite;
+}
+
+.sk-road::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 12%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: .8;
+  animation: road-glow 3s ease-in-out infinite;
+}
+
+@keyframes road-dash {
+  to { transform: translateX(-8%); }
+}
+
+@keyframes road-glow {
+  50% { opacity: .35; }
+}
+
+.sk-car {
+  position: absolute;
+  bottom: 26%;
+  left: -18%;
+  width: var(--s, 120px);
+  color: var(--accent);
+  animation: car-race var(--dur, 16s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .55));
+}
+
+.sk-car.rev {
+  bottom: 8%;
+  animation-name: car-race-rev;
+  opacity: .55;
+  transform: scaleX(-1);
+}
+
+.sk-car .sk-wheel {
+  transform-origin: center;
+  animation: wheel-spin .55s linear infinite;
+}
+
+.sk-car .sk-tail {
+  animation: tail-glow 1.4s ease-in-out infinite;
+}
+
+@keyframes wheel-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes tail-glow {
+  50% { opacity: .45; }
+}
+
+@keyframes car-race {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(150vw); }
+}
+
+@keyframes car-race-rev {
+  0% { transform: translateX(0) scaleX(-1); }
+  100% { transform: translateX(-150vw) scaleX(-1); }
+}
+
+.sk-speed {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 46%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 60%, transparent), transparent);
+  opacity: .5;
+}
+
+.sk-speed i {
+  position: absolute;
+  left: var(--x, 20%);
+  top: var(--y, 0);
+  width: var(--w, 80px);
+  height: 2px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
+  animation: speed-line var(--dur, 2s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes speed-line {
+  0% { transform: translateX(20vw); opacity: 0; }
+  20% { opacity: .8; }
+  100% { transform: translateX(-90vw); opacity: 0; }
+}
+
+.sk-checker {
+  position: absolute;
+  top: 4%;
+  left: 2%;
+  width: 90px;
+  height: 28px;
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, .5) 25%, transparent 25% 75%, rgba(255, 255, 255, .5) 75%),
+    linear-gradient(45deg, rgba(255, 255, 255, .5) 25%, transparent 25% 75%, rgba(255, 255, 255, .5) 75%);
+  background-size: 14px 14px;
+  background-position: 0 0, 7px 7px;
+  opacity: .25;
+  transform: rotate(-6deg);
+}
+
+.sk-steer {
+  position: absolute;
+  right: 4%;
+  bottom: 6%;
+  width: clamp(60px, 8vw, 100px);
+  color: rgba(255, 255, 255, .1);
+  animation: spin 30s linear infinite;
+}
+
+/* ============================================================
+   ASTRONAUT — luar angkasa
+   ============================================================ */
+
+.s-space {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 50% at 70% 18%, rgba(130, 80, 255, .26), transparent 65%),
+    radial-gradient(50% 45% at 16% 76%, rgba(60, 190, 255, .16), transparent 68%),
+    linear-gradient(160deg, #05030f 0%, #0e0a26 50%, #05030f 100%);
+}
+
+html[data-theme="astronaut"][data-mode="light"] .s-space {
+  background:
+    radial-gradient(60% 50% at 70% 18%, rgba(160, 130, 255, .35), transparent 65%),
+    radial-gradient(50% 45% at 16% 76%, rgba(120, 210, 255, .35), transparent 68%),
+    linear-gradient(160deg, #dcd7ff 0%, #c8c2ff 45%, #e9e7ff 100%);
+}
+
+.ss-nebula {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: .5;
+  animation: nebula-drift 26s ease-in-out infinite alternate;
+}
+
+.ss-nebula.n1 {
+  width: 44vmax;
+  height: 34vmax;
+  left: -14vmax;
+  top: 6%;
+  background: rgba(140, 90, 255, .25);
+}
+
+.ss-nebula.n2 {
+  width: 38vmax;
+  height: 30vmax;
+  right: -12vmax;
+  bottom: -4vmax;
+  background: rgba(50, 190, 255, .18);
+  animation-delay: -9s;
+}
+
+.ss-nebula.n3 {
+  width: 24vmax;
+  height: 22vmax;
+  left: 42%;
+  top: 44%;
+  background: rgba(255, 90, 180, .12);
+  animation-delay: -15s;
+}
+
+@keyframes nebula-drift {
+  to { transform: translate(4vw, -3vh) scale(1.14); }
+}
+
+.ss-star {
+  position: absolute;
+  width: var(--w, 2px);
+  height: var(--w, 2px);
+  border-radius: 50%;
+  background: #fff;
+  opacity: .7;
+  animation: star-twinkle var(--dur, 4s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+html[data-theme="astronaut"][data-mode="light"] .ss-star {
+  background: #4a3a8a;
+}
+
+.ss-meteor {
+  position: absolute;
+  top: var(--y, 10%);
+  left: var(--x, 60%);
+  width: 110px;
+  height: 2px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff 70%, #fff);
+  opacity: 0;
+  transform: rotate(-34deg);
+  animation: meteor-fly var(--dur, 12s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  filter: drop-shadow(0 0 6px #fff);
+}
+
+@keyframes meteor-fly {
+  0% { opacity: 0; transform: translate(0, 0) rotate(-34deg) scaleX(.4); }
+  2% { opacity: .9; }
+  9% { opacity: 0; transform: translate(-48vw, 34vh) rotate(-34deg) scaleX(1); }
+  100% { opacity: 0; transform: translate(-48vw, 34vh) rotate(-34deg) scaleX(1); }
+}
+
+.ss-planet {
+  position: absolute;
+  right: 10%;
+  top: 12%;
+  width: clamp(90px, 14vw, 180px);
+  height: clamp(90px, 14vw, 180px);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 30%, #e6d7ff, #9a76ff 38%, #4b2c9c 72%, #22124f);
+  box-shadow: inset -16px -18px 40px rgba(0, 0, 0, .45), 0 0 60px rgba(140, 100, 255, .25);
+  animation: planet-float 14s ease-in-out infinite;
+}
+
+.ss-planet::after {
+  content: "";
+  position: absolute;
+  left: -18%;
+  top: 42%;
+  width: 136%;
+  height: 18%;
+  border-radius: 50%;
+  border: 6px solid rgba(255, 220, 160, .35);
+  transform: rotate(-16deg);
+  box-shadow: 0 0 20px rgba(255, 220, 160, .18);
+}
+
+@keyframes planet-float {
+  50% { transform: translateY(-16px) rotate(3deg); }
+}
+
+.ss-astronaut {
+  position: absolute;
+  left: 8%;
+  top: 30%;
+  width: clamp(80px, 11vw, 140px);
+  animation: astro-float 9s ease-in-out infinite;
+  opacity: .85;
+  filter: drop-shadow(0 0 24px rgba(140, 180, 255, .25));
+}
+
+@keyframes astro-float {
+  0%, 100% { transform: translate(0, 0) rotate(-6deg); }
+  50% { transform: translate(16px, -30px) rotate(6deg); }
+}
+
+.ss-satellite {
+  position: absolute;
+  right: 20%;
+  bottom: 24%;
+  width: 54px;
+  color: rgba(220, 210, 255, .4);
+  animation: spin 22s linear infinite;
+}
+
+.ss-ufo {
+  position: absolute;
+  top: 38%;
+  left: -26%;
+  width: clamp(54px, 7vw, 86px);
+  color: rgba(180, 255, 190, .8);
+  opacity: 0;
+  animation: ufo-pass 26s linear infinite;
+  animation-delay: 9s;
+  filter: drop-shadow(0 0 18px rgba(120, 255, 170, .35));
+}
+
+.ss-ufo .ufo-beam {
+  opacity: .4;
+  animation: ufo-beam 1.2s ease-in-out infinite;
+}
+
+@keyframes ufo-pass {
+  0% { opacity: 0; transform: translateX(0) translateY(0) rotate(-3deg); }
+  3% { opacity: 1; }
+  22% { opacity: 1; transform: translateX(72vw) translateY(-7vh) rotate(3deg); }
+  26% { opacity: 0; transform: translateX(84vw) translateY(-8vh); }
+  100% { opacity: 0; }
+}
+
+@keyframes ufo-beam {
+  50% { opacity: .65; }
+}
+
+html[data-mode="light"] .son-star,
+html[data-mode="light"] .sk-star {
+  background: #34406a;
+}
+
+/* Kurangi beban di layar kecil */
+
+@media (max-width: 700px) {
+  .sd-float.f5,
+  .sf-bird:nth-child(n+4),
+  .so-fish:nth-child(n+8),
+  .son-fish:nth-child(n+7),
+  .sc-heart:nth-child(n+7),
+  .sr-rack:nth-child(n+4),
+  .sk-star:nth-child(n+20),
+  .ss-star:nth-child(n+40) {
+    display: none;
+  }
+}

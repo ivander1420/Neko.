@@ -1,0 +1,627 @@
+package com.neko.tjkt;
+
+import android.Manifest;
+import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.ClipData;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
+import android.graphics.Color;
+import android.graphics.Insets;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Message;
+import android.os.SystemClock;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
+import android.webkit.CookieManager;
+import android.webkit.GeolocationPermissions;
+import android.webkit.PermissionRequest;
+import android.webkit.RenderProcessGoneDetail;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
+import android.widget.Toast;
+import android.window.OnBackInvokedDispatcher;
+
+import org.json.JSONObject;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public final class MainActivity extends Activity {
+    private static final String HOST = "neko-tjkt.vercel.app";
+    private static final String ORIGIN = "https://" + HOST;
+    private static final String HOME = ORIGIN + "/";
+    private static final int MICROPHONE_REQUEST = 41;
+    private static final int IMAGE_REQUEST = 42;
+    private static final int LEGACY_LAYOUT = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+    private final ExecutorService healthExecutor = Executors.newSingleThreadExecutor();
+    private final Set<WebView> popupViews = new HashSet<>();
+    private FrameLayout container;
+    private WebView webView;
+    private View fullscreenView;
+    private WebChromeClient.CustomViewCallback fullscreenCallback;
+    private PermissionRequest microphoneRequest;
+    private ValueCallback<Uri[]> imageCallback;
+    private boolean microphonePromptInFlight;
+    private boolean imagePickerInFlight;
+    private boolean bundledPageReady;
+    private boolean newerRemoteAvailable;
+    private boolean remoteAttempted;
+    private boolean startupInteracted;
+    private volatile boolean preferRemoteUi;
+    private volatile boolean destroyed;
+    private volatile HttpURLConnection healthConnection;
+
+    @Override public void onCreate(Bundle state) {
+        super.onCreate(state);
+        container = new FrameLayout(this);
+        container.setBackgroundColor(Color.rgb(27, 17, 11));
+        setContentView(container);
+        installInsets();
+        webView = new WebView(this);
+        container.addView(webView, matchParent());
+        configureWebView(webView);
+        webView.setWebViewClient(new AppClient());
+        webView.setWebChromeClient(new AppChrome());
+        webView.setDownloadListener((url, userAgent, disposition, mime, length) ->
+                openHttpsBrowser(Uri.parse(url)));
+        if (Build.VERSION.SDK_INT >= 33) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::handleBack);
+        }
+        if (state != null) {
+            preferRemoteUi = state.getBoolean("remoteUi", false);
+            remoteAttempted = state.getBoolean("remoteAttempted", false);
+            startupInteracted = state.getBoolean("startupInteracted", false);
+        }
+        // Loading a real HTTPS URL keeps secure-context media APIs, cookies, storage,
+        // and the browser-generated YouTube Referer working. Never use file:// or a bridge.
+        if (state == null || webView.restoreState(state) == null) webView.loadUrl(HOME);
+        if (!remoteAttempted) checkRemoteVersion();
+    }
+
+    private FrameLayout.LayoutParams matchParent() {
+        return new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT);
+    }
+
+    private void installInsets() {
+        if (Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(false);
+        else getWindow().getDecorView().setSystemUiVisibility(LEGACY_LAYOUT);
+        container.setOnApplyWindowInsetsListener((view, insets) -> {
+            // Target 36 enforces edge-to-edge. Pad the whole content (including fullscreen
+            // media) against bars/cutouts and the keyboard; CSS needs no guessed dock height.
+            if (Build.VERSION.SDK_INT >= 30) {
+                Insets safe = insets.getInsets(WindowInsets.Type.systemBars()
+                        | WindowInsets.Type.displayCutout() | WindowInsets.Type.ime());
+                view.setPadding(safe.left, safe.top, safe.right, safe.bottom);
+            } else {
+                view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
+                        insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
+            }
+            return insets.consumeSystemWindowInsets();
+        });
+        container.requestApplyInsets();
+    }
+
+    private void configureWebView(WebView view) {
+        WebSettings settings = view.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setAllowFileAccess(false);
+        settings.setAllowContentAccess(false);
+        settings.setAllowFileAccessFromFileURLs(false);
+        settings.setAllowUniversalAccessFromFileURLs(false);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        settings.setMediaPlaybackRequiresUserGesture(true);
+        settings.setJavaScriptCanOpenWindowsAutomatically(false);
+        settings.setSupportMultipleWindows(true);
+        settings.setGeolocationEnabled(false);
+        if (Build.VERSION.SDK_INT >= 26) settings.setSafeBrowsingEnabled(true);
+        // Keep the installed, modern WebView user agent; do not impersonate a desktop browser.
+        CookieManager.getInstance().setAcceptCookie(true);
+        CookieManager.getInstance().setAcceptThirdPartyCookies(view, false);
+        WebView.setWebContentsDebuggingEnabled(false);
+        view.setBackgroundColor(Color.rgb(27, 17, 11));
+    }
+
+    private static boolean isHttps(Uri uri) {
+        return uri != null && "https".equalsIgnoreCase(uri.getScheme())
+                && uri.getHost() != null && uri.getUserInfo() == null;
+    }
+
+    private static boolean isTrusted(Uri uri) {
+        return isHttps(uri) && HOST.equalsIgnoreCase(uri.getHost())
+                && (uri.getPort() == -1 || uri.getPort() == 443);
+    }
+
+    private boolean trustedTopLevel() {
+        return webView != null && webView.getUrl() != null
+                && isTrusted(Uri.parse(webView.getUrl()));
+    }
+
+    private void openHttpsBrowser(Uri uri) {
+        if (!isHttps(uri) || destroyed) return;
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            intent.addCategory(Intent.CATEGORY_BROWSABLE);
+            startActivity(intent);
+        } catch (ActivityNotFoundException | SecurityException ignored) {
+            Toast.makeText(this, R.string.browser_unavailable, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private final class AppClient extends WebViewClient {
+        @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+            Uri uri = request.getUrl();
+            // HTTPS subframes, including genuine YouTube embeds, stay in the WebView.
+            // An iframe navigation must never launch an external browser.
+            if (!request.isForMainFrame()) return !isHttps(uri);
+            if (isTrusted(uri)) return false;
+            openHttpsBrowser(uri);
+            return true; // Reject http, file, intent, javascript and every other scheme.
+        }
+
+        @Override public WebResourceResponse shouldInterceptRequest(WebView view,
+                                                                    WebResourceRequest request) {
+            // Returning null leaves ALL /api requests, non-GET traffic, other origins,
+            // remote media and missing assets on the real network, without fake API responses.
+            if (preferRemoteUi || !"GET".equals(request.getMethod())
+                    || !isTrusted(request.getUrl())) return null;
+            String path = request.getUrl().getPath();
+            String asset = bundledAssetPath(path);
+            if (asset == null) return null;
+            // Let the server handle byte-range media requests rather than misreport partial data.
+            for (String header : request.getRequestHeaders().keySet()) {
+                if ("range".equalsIgnoreCase(header)) return null;
+            }
+            try {
+                InputStream input = getAssets().open("neko/" + asset, AssetManager.ACCESS_STREAMING);
+                String mime = mimeType(asset);
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Cache-Control", "no-store");
+                headers.put("X-Content-Type-Options", "nosniff");
+                headers.put("Referrer-Policy", "strict-origin-when-cross-origin");
+                boolean text = mime.startsWith("text/") || mime.contains("javascript")
+                        || mime.contains("json") || mime.equals("image/svg+xml");
+                return new WebResourceResponse(mime, text ? "UTF-8" : null,
+                        200, "OK", headers, input);
+            } catch (IOException missing) {
+                return null;
+            }
+        }
+
+        @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+            cancelPendingRequests();
+            if (!isTrusted(Uri.parse(url))) {
+                view.stopLoading();
+                openHttpsBrowser(Uri.parse(url));
+            }
+        }
+
+        @Override public void onPageFinished(WebView view, String url) {
+            if (isTrusted(Uri.parse(url))) {
+                bundledPageReady = true;
+                maybeUseRemoteUi();
+            }
+        }
+
+        @Override public void onReceivedError(WebView view, WebResourceRequest request,
+                                               WebResourceError error) {
+            if (request.isForMainFrame()) fallbackToBundle();
+        }
+
+        @Override public void onReceivedHttpError(WebView view, WebResourceRequest request,
+                                                   WebResourceResponse error) {
+            if (request.isForMainFrame() && error.getStatusCode() >= 400) fallbackToBundle();
+        }
+
+        // SSL errors use WebView's default cancellation. There is deliberately no SSL bypass.
+        @Override public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+            cancelPendingRequests();
+            hideFullscreen();
+            container.removeView(view);
+            view.destroy();
+            webView = null;
+            Toast.makeText(MainActivity.this, R.string.webview_stopped, Toast.LENGTH_LONG).show();
+            finish();
+            return true;
+        }
+    }
+
+    private static String bundledAssetPath(String path) {
+        if (path == null || path.contains("\\") || path.contains("%") || path.indexOf('\0') >= 0) return null;
+        for (String segment : path.split("/")) {
+            if ("..".equals(segment) || ".".equals(segment)) return null;
+        }
+        if ("/".equals(path) || "/index.html".equals(path)) return "index.html";
+        if ("/favicon.svg".equals(path)) return "favicon.svg";
+        if ("/manifest.webmanifest".equals(path)) return "manifest.webmanifest";
+        if (!(path.startsWith("/js/") || path.startsWith("/css/")
+                || path.startsWith("/data/") || path.startsWith("/assets/")
+                || path.startsWith("/public/icons/"))) return null;
+        return mimeType(path) == null ? null : path.substring(1);
+    }
+
+    private static String mimeType(String name) {
+        int dot = name.lastIndexOf('.');
+        if (dot < 0) return null;
+        switch (name.substring(dot + 1).toLowerCase(Locale.ROOT)) {
+            case "html": return "text/html";
+            case "js": return "application/javascript";
+            case "css": return "text/css";
+            case "json": return "application/json";
+            case "webmanifest": return "application/manifest+json";
+            case "svg": return "image/svg+xml";
+            case "png": return "image/png";
+            case "jpg": case "jpeg": return "image/jpeg";
+            case "webp": return "image/webp";
+            case "gif": return "image/gif";
+            case "ico": return "image/x-icon";
+            case "woff": return "font/woff";
+            case "woff2": return "font/woff2";
+            case "ttf": return "font/ttf";
+            case "mp3": return "audio/mpeg";
+            case "ogg": return "audio/ogg";
+            case "wav": return "audio/wav";
+            case "mp4": return "video/mp4";
+            case "webm": return "video/webm";
+            case "pdf": return "application/pdf";
+            default: return null;
+        }
+    }
+
+    private final class AppChrome extends WebChromeClient {
+        @Override public void onPermissionRequest(PermissionRequest request) {
+            String[] resources = request.getResources();
+            // Never grant camera, protected-media, MIDI, or permissions to other origins.
+            if (destroyed || !trustedTopLevel() || !isTrusted(request.getOrigin())
+                    || resources.length != 1
+                    || !PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resources[0])
+                    || microphoneRequest != null || microphonePromptInFlight) {
+                request.deny();
+                return;
+            }
+            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+                return;
+            }
+            microphoneRequest = request;
+            microphonePromptInFlight = true;
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, MICROPHONE_REQUEST);
+        }
+
+        @Override public void onPermissionRequestCanceled(PermissionRequest request) {
+            if (microphoneRequest == request) microphoneRequest = null;
+        }
+
+        @Override public void onGeolocationPermissionsShowPrompt(String origin,
+                                                                 GeolocationPermissions.Callback callback) {
+            callback.invoke(origin, false, false);
+        }
+
+        @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback,
+                                                    FileChooserParams params) {
+            cancelImageCallback();
+            if (destroyed || !trustedTopLevel() || imagePickerInFlight
+                    || params.getMode() == FileChooserParams.MODE_SAVE) {
+                callback.onReceiveValue(null);
+                return true;
+            }
+            imageCallback = callback;
+            Intent picker = new Intent(Intent.ACTION_GET_CONTENT);
+            picker.addCategory(Intent.CATEGORY_OPENABLE);
+            picker.setType("image/*");
+            picker.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,
+                    params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE);
+            try {
+                imagePickerInFlight = true;
+                startActivityForResult(picker, IMAGE_REQUEST);
+            } catch (ActivityNotFoundException | SecurityException ignored) {
+                imagePickerInFlight = false;
+                cancelImageCallback();
+                Toast.makeText(MainActivity.this, R.string.picker_unavailable, Toast.LENGTH_SHORT).show();
+            }
+            return true;
+        }
+
+        @Override public boolean onCreateWindow(WebView view, boolean isDialog,
+                                                 boolean isUserGesture, Message resultMsg) {
+            if (!isUserGesture || !trustedTopLevel() || destroyed) return false;
+            for (WebView previous : new HashSet<>(popupViews)) disposePopup(previous);
+            WebView popup = new WebView(MainActivity.this);
+            popup.getSettings().setJavaScriptEnabled(false);
+            popup.getSettings().setAllowFileAccess(false);
+            popup.getSettings().setAllowContentAccess(false);
+            popup.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+            popupViews.add(popup);
+            // A temporary, scriptless transport captures target=_blank without a JS bridge.
+            // It never renders or fetches the destination, and untrusted schemes are discarded.
+            popup.setWebViewClient(new WebViewClient() {
+                private boolean handled;
+                private void navigate(Uri uri) {
+                    if (handled || "about:blank".equals(uri.toString())) return;
+                    handled = true;
+                    if (isTrusted(uri) && webView != null) webView.loadUrl(uri.toString());
+                    else openHttpsBrowser(uri);
+                    popup.stopLoading();
+                    popup.post(() -> disposePopup(popup));
+                }
+                @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
+                    if (r.isForMainFrame()) navigate(r.getUrl());
+                    return true;
+                }
+                @Override public void onPageStarted(WebView v, String url, android.graphics.Bitmap icon) {
+                    navigate(Uri.parse(url));
+                }
+                @Override public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
+                    return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream(new byte[0]));
+                }
+            });
+            popup.setWebChromeClient(new WebChromeClient() {
+                @Override public void onCloseWindow(WebView window) { disposePopup(window); }
+            });
+            WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+            transport.setWebView(popup);
+            resultMsg.sendToTarget();
+            return true;
+        }
+
+        @Override public void onShowCustomView(View view, CustomViewCallback callback) {
+            if (fullscreenView != null || !trustedTopLevel()) {
+                callback.onCustomViewHidden();
+                return;
+            }
+            fullscreenView = view;
+            fullscreenCallback = callback;
+            webView.setVisibility(View.INVISIBLE);
+            container.addView(view, matchParent());
+            getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            if (Build.VERSION.SDK_INT >= 30) {
+                WindowInsetsController controller = getWindow().getInsetsController();
+                if (controller != null) {
+                    controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                    controller.hide(WindowInsets.Type.systemBars());
+                }
+            } else {
+                getWindow().getDecorView().setSystemUiVisibility(LEGACY_LAYOUT
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+            }
+        }
+
+        @Override public void onHideCustomView() { hideFullscreen(); }
+    }
+
+    private void disposePopup(WebView popup) {
+        if (popupViews.remove(popup)) popup.destroy();
+    }
+
+    private void hideFullscreen() {
+        if (fullscreenView == null) return;
+        container.removeView(fullscreenView);
+        fullscreenView = null;
+        if (webView != null) webView.setVisibility(View.VISIBLE);
+        getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (Build.VERSION.SDK_INT >= 30) {
+            WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller != null) controller.show(WindowInsets.Type.systemBars());
+        } else getWindow().getDecorView().setSystemUiVisibility(LEGACY_LAYOUT);
+        WebChromeClient.CustomViewCallback callback = fullscreenCallback;
+        fullscreenCallback = null;
+        if (callback != null) callback.onCustomViewHidden();
+        container.requestApplyInsets();
+    }
+
+    private void cancelImageCallback() {
+        ValueCallback<Uri[]> callback = imageCallback;
+        imageCallback = null;
+        if (callback != null) callback.onReceiveValue(null);
+    }
+
+    private void cancelPendingRequests() {
+        cancelImageCallback();
+        PermissionRequest request = microphoneRequest;
+        microphoneRequest = null;
+        if (request != null) request.deny();
+    }
+
+    @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode != MICROPHONE_REQUEST) return;
+        microphonePromptInFlight = false;
+        PermissionRequest request = microphoneRequest;
+        microphoneRequest = null;
+        if (request == null) return;
+        if (!destroyed && trustedTopLevel() && isTrusted(request.getOrigin())
+                && results.length == 1 && results[0] == PackageManager.PERMISSION_GRANTED) {
+            request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+        } else request.deny();
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent result) {
+        super.onActivityResult(requestCode, resultCode, result);
+        if (requestCode != IMAGE_REQUEST) return;
+        imagePickerInFlight = false;
+        ValueCallback<Uri[]> callback = imageCallback;
+        imageCallback = null;
+        if (callback == null) return;
+        ArrayList<Uri> images = new ArrayList<>();
+        if (!destroyed && trustedTopLevel() && resultCode == RESULT_OK && result != null) {
+            ClipData clip = result.getClipData();
+            if (clip != null) {
+                for (int i = 0; i < Math.min(clip.getItemCount(), 32); i++) {
+                    addPickedImage(images, clip.getItemAt(i).getUri());
+                }
+            } else addPickedImage(images, result.getData());
+        }
+        callback.onReceiveValue(images.isEmpty() ? null : images.toArray(new Uri[0]));
+    }
+
+    private void addPickedImage(ArrayList<Uri> images, Uri uri) {
+        // Only system-granted content URIs with an image MIME type reach the web upload.
+        // No broad storage permission, file URL, camera capture, or persistent URI grant is used.
+        if (uri == null || !"content".equals(uri.getScheme()) || images.contains(uri)) return;
+        try {
+            String type = getContentResolver().getType(uri);
+            if (type != null && type.startsWith("image/")) images.add(uri);
+        } catch (SecurityException ignored) { }
+    }
+
+    private void checkRemoteVersion() {
+        healthExecutor.execute(() -> {
+            boolean newer = false;
+            HttpURLConnection connection = null;
+            try {
+                // Optional, read-only and bounded. A failed check always keeps bundled UI.
+                // Never follow redirects or relax TLS, and never send app cookies or tokens.
+                connection = (HttpURLConnection) new URL(ORIGIN + "/api/health").openConnection();
+                healthConnection = connection;
+                if (destroyed) return;
+                connection.setRequestMethod("GET");
+                connection.setInstanceFollowRedirects(false);
+                connection.setConnectTimeout(1500);
+                connection.setReadTimeout(1500);
+                connection.setUseCaches(false);
+                connection.setRequestProperty("Accept", "application/json");
+                long deadline = SystemClock.elapsedRealtime() + 3500;
+                if (connection.getResponseCode() == 200) {
+                    try (InputStream input = connection.getInputStream();
+                         ByteArrayOutputStream bytes = new ByteArrayOutputStream()) {
+                        byte[] buffer = new byte[2048];
+                        int count;
+                        while ((count = input.read(buffer)) != -1) {
+                            if (bytes.size() + count > 32768 || SystemClock.elapsedRealtime() > deadline) {
+                                throw new IOException("Health response exceeded startup bounds");
+                            }
+                            bytes.write(buffer, 0, count);
+                        }
+                        JSONObject health = new JSONObject(bytes.toString(StandardCharsets.UTF_8.name()));
+                        newer = "ok".equals(health.optString("status"))
+                                && isNewerVersion(health.optString("version"), BuildConfig.VERSION_NAME);
+                    }
+                }
+            } catch (Exception unavailable) {
+                // Offline UI is still local; remote backend/media cannot work without internet.
+            } finally {
+                if (connection != null) connection.disconnect();
+                healthConnection = null;
+            }
+            final boolean result = newer;
+            runOnUiThread(() -> {
+                if (destroyed) return;
+                newerRemoteAvailable = result;
+                maybeUseRemoteUi();
+            });
+        });
+    }
+
+    private static boolean isNewerVersion(String remote, String bundled) {
+        if (!remote.matches("[0-9]{1,9}\\.[0-9]{1,9}\\.[0-9]{1,9}")) return false;
+        String[] a = remote.split("\\.");
+        String[] b = bundled.split("\\.");
+        for (int i = 0; i < 3; i++) {
+            int comparison = Integer.compare(Integer.parseInt(a[i]), Integer.parseInt(b[i]));
+            if (comparison != 0) return comparison > 0;
+        }
+        return false;
+    }
+
+    private void maybeUseRemoteUi() {
+        if (remoteAttempted || !newerRemoteAvailable || !bundledPageReady || !trustedTopLevel()) return;
+        remoteAttempted = true;
+        // The newest bundled UI paints first, without waiting for a network check. A newer
+        // deployment can replace it once for this launch, but never interrupt input, a picker,
+        // a microphone prompt, or fullscreen. In that case the next launch checks again.
+        if (startupInteracted || imagePickerInFlight || microphonePromptInFlight || fullscreenView != null) return;
+        preferRemoteUi = true;
+        webView.reload();
+        // Do not clear cookies, Web Storage, cache, login state or user data on version changes.
+    }
+
+    private void fallbackToBundle() {
+        if (!preferRemoteUi || destroyed || webView == null) return;
+        preferRemoteUi = false;
+        remoteAttempted = true;
+        webView.stopLoading();
+        webView.loadUrl(HOME);
+    }
+
+    @Override public void onUserInteraction() {
+        startupInteracted = true;
+        super.onUserInteraction();
+    }
+
+    private void handleBack() {
+        if (fullscreenView != null) hideFullscreen();
+        else if (webView != null && webView.canGoBack()) webView.goBack();
+        else finish();
+    }
+
+    // Only the API 24-32 compatibility path uses this callback. API 33+ uses the
+    // platform OnBackInvokedDispatcher registered above, including target-36 gestures.
+    @android.annotation.SuppressLint("GestureBackNavigation")
+    @SuppressWarnings("deprecation")
+    @Override public void onBackPressed() { handleBack(); }
+
+    @Override protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putBoolean("remoteUi", preferRemoteUi);
+        state.putBoolean("remoteAttempted", remoteAttempted);
+        state.putBoolean("startupInteracted", startupInteracted);
+        if (webView != null) webView.saveState(state);
+    }
+
+    @Override protected void onPause() {
+        if (webView != null) webView.onPause();
+        CookieManager.getInstance().flush();
+        super.onPause();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (webView != null) webView.onResume();
+    }
+
+    @Override protected void onDestroy() {
+        destroyed = true;
+        HttpURLConnection connection = healthConnection;
+        if (connection != null) connection.disconnect();
+        healthExecutor.shutdownNow();
+        cancelPendingRequests();
+        hideFullscreen();
+        for (WebView popup : new HashSet<>(popupViews)) disposePopup(popup);
+        if (webView != null) {
+            container.removeView(webView);
+            webView.destroy();
+            webView = null;
+        }
+        super.onDestroy();
+    }
+}

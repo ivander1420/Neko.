@@ -1,0 +1,356 @@
+/* ============================================================
+   NEKO · js/games/arcade50.js — 50 Game Arcade Viral bertema TJKT
+   ============================================================ */
+(function () {
+  'use strict';
+  const Neko = window.Neko = window.Neko || {};
+  Neko.games = Neko.games || {};
+  const { esc, clamp } = Neko.util;
+  const { icon } = Neko.icons;
+
+  const NAMES = {
+    flappy: ['Flappy Paket', 'Flappy Router', 'Flappy Kabel', 'Flappy Switch', 'Flappy Server', 'Flappy Antena', 'Flappy Fiber', 'Flappy Hub', 'Flappy Modem'],
+    runner: ['Lari Kabel', 'Lari Server', 'Lari Router', 'Lari Paket', 'Lari Fiber', 'Lari Switch', 'Lari Antena', 'Lari Hub'],
+    catch: ['Tangkap Paket', 'Tangkap Sinyal', 'Tangkap Data', 'Tangkap Frame', 'Tangkap Bit', 'Tangkap Oktet', 'Tangkap MAC', 'Tangkap IP'],
+    dodge: ['Hindari Virus', 'Hindari Malware', 'Hindari Noise', 'Hindari Interferensi', 'Hindari Badai', 'Hindari Serangan', 'Hindari Glitch', 'Hindari Lag'],
+    aim: ['Buru Bug', 'Buru Virus', 'Buru Glitch', 'Buru Malware', 'Buru Error', 'Buru Worm', 'Buru Trojan', 'Buru Spyware'],
+    reflex: ['Refleks Port', 'Refleks LED', 'Refleks Sinyal', 'Refleks Link', 'Refleks Ping', 'Refleks Hop', 'Refleks ACK', 'Refleks Frame']
+  };
+  const ICONS = { flappy: 'packet', runner: 'bolt', catch: 'download', dodge: 'shield', aim: 'crosshair', reflex: 'bolt' };
+  const COLORS = ['#22d3ee', '#f59e0b', '#fb7185', '#a3e635', '#a78bfa', '#38bdf8', '#2dd4bf', '#fb923c'];
+  const ORDER = ['flappy', 'runner', 'catch', 'dodge', 'aim', 'reflex'];
+
+  const GAMES = [];
+  let idx = 1;
+  while (GAMES.length < 50) {
+    const mech = ORDER[GAMES.length % ORDER.length];
+    const pool = NAMES[mech];
+    const base = pool[Math.floor(GAMES.length / ORDER.length) % pool.length];
+    let name = base;
+    if (GAMES.filter(g => g.name === name).length) name = base + ' ' + (Math.floor(GAMES.length / (pool.length * ORDER.length)) + 1);
+    GAMES.push({ n: idx, id: 'arcade' + idx, name: name, mechanic: mech, icon: ICONS[mech], color: COLORS[idx % COLORS.length], target: 6 + (idx % 5), speed: 1 + (idx % 4) * 0.15 });
+    idx++;
+  }
+
+  function makeCanvas(ctx) {
+    ctx.setStage('<div class="arcade-wrap"><canvas id="arcade-canvas" width="480" height="640" tabindex="0"></canvas><div class="arcade-hint" id="arcade-hint"></div></div>', true);
+    const canvas = document.getElementById('arcade-canvas');
+    const hint = document.getElementById('arcade-hint');
+    return { canvas, hint, c: canvas.getContext('2d') };
+  }
+
+  function finishGame(ctx, game, score, won, extra) {
+    const xp = Math.max(8, Math.round(score * 2 + (won ? 20 : 0)));
+    ctx.finish(Object.assign({ title: won ? 'Hebat! Kamu menang!' : 'Sesi selesai', message: game.name + ' — terus berlatih agar makin cepat.', won: !!won, score: Math.max(0, Math.round(score)), xp, stats: [{ label: 'Skor', value: Math.round(score) }, { label: 'Target', value: game.target }] }, extra || {}));
+  }
+
+  /* ---------- Mechanic: FLAPPY ---------- */
+  function runFlappy(ctx, game) {
+    const { canvas, hint, c } = makeCanvas(ctx);
+    hint.textContent = 'Klik / tekan SPASI untuk terbang. Hindari rintangan.';
+    let bird = { x: 80, y: 320, vy: 0 };
+    const gravity = 0.45 * game.speed;
+    const flap = -7.5;
+    const pipes = [];
+    let pipeTimer = 0;
+    let score = 0;
+    let alive = true;
+    let raf = 0;
+    const W = canvas.width, H = canvas.height;
+    const ground = H - 40;
+    function spawnPipe() { const gap = 150; const topH = 60 + Math.random() * (H - gap - 160); pipes.push({ x: W, top: topH, gap, passed: false }); }
+    function flapFn() { if (alive) bird.vy = flap; }
+    canvas.addEventListener('mousedown', flapFn);
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); flapFn(); }, { passive: false });
+    const keyFn = (e) => { if (e.code === 'Space') { e.preventDefault(); flapFn(); } };
+    window.addEventListener('keydown', keyFn);
+    ctx.cleanup(() => { window.removeEventListener('keydown', keyFn); cancelAnimationFrame(raf); });
+    let last = performance.now();
+    function loop(now) {
+      if (!alive) return;
+      const dt = Math.min(2, (now - last) / 16.67); last = now;
+      bird.vy += gravity * dt; bird.y += bird.vy * dt;
+      pipeTimer += dt;
+      if (pipeTimer > 90) { spawnPipe(); pipeTimer = 0; }
+      for (let i = pipes.length - 1; i >= 0; i--) {
+        const p = pipes[i]; p.x -= 3.2 * game.speed * dt;
+        if (!p.passed && p.x + 60 < bird.x) { p.passed = true; score += 1; ctx.setHUD([{ icon: 'target', label: score + ' poin' }, { icon: 'list', label: 'Target ' + game.target }]); if (score >= game.target) { alive = false; finishGame(ctx, game, score, true); return; } }
+        if (bird.x + 14 > p.x && bird.x - 14 < p.x + 60) {
+          if (bird.y - 12 < p.top || bird.y + 12 > p.top + p.gap) { alive = false; finishGame(ctx, game, score, false); return; }
+        }
+        if (p.x + 60 < 0) pipes.splice(i, 1);
+      }
+      if (bird.y + 12 > ground || bird.y - 12 < 0) { alive = false; finishGame(ctx, game, score, false); return; }
+      c.fillStyle = '#0b1220'; c.fillRect(0, 0, W, H);
+      c.fillStyle = '#22c55e';
+      pipes.forEach(p => { c.fillRect(p.x, 0, 60, p.top); c.fillRect(p.x, p.top + p.gap, 60, H - (p.top + p.gap)); });
+      c.fillStyle = '#334155'; c.fillRect(0, ground, W, H - ground);
+      c.fillStyle = '#fbbf24'; c.beginPath(); c.arc(bird.x, bird.y, 14, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#000'; c.beginPath(); c.arc(bird.x + 4, bird.y - 3, 3, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#fff'; c.font = 'bold 28px sans-serif'; c.textAlign = 'center'; c.fillText(score, W / 2, 50);
+      raf = requestAnimationFrame(loop);
+    }
+    raf = requestAnimationFrame(loop);
+    ctx.setHUD([{ icon: 'target', label: '0 poin' }, { icon: 'list', label: 'Target ' + game.target }]);
+  }
+
+  /* ---------- Mechanic: RUNNER ---------- */
+  function runRunner(ctx, game) {
+    const { canvas, hint, c } = makeCanvas(ctx);
+    hint.textContent = 'Tekan SPASI / klik untuk lompat. Hindari rintangan.';
+    const W = canvas.width, H = canvas.height;
+    const ground = H - 60;
+    let player = { x: 80, y: ground, vy: 0, onGround: true };
+    const gravity = 0.9 * game.speed;
+    const jump = -15;
+    const obstacles = [];
+    let timer = 0;
+    let score = 0;
+    let alive = true;
+    let raf = 0;
+    function jumpFn() { if (alive && player.onGround) { player.vy = jump; player.onGround = false; } }
+    canvas.addEventListener('mousedown', jumpFn);
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); jumpFn(); }, { passive: false });
+    const keyFn = (e) => { if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); jumpFn(); } };
+    window.addEventListener('keydown', keyFn);
+    ctx.cleanup(() => { window.removeEventListener('keydown', keyFn); cancelAnimationFrame(raf); });
+    let last = performance.now();
+    function loop(now) {
+      if (!alive) return;
+      const dt = Math.min(2, (now - last) / 16.67); last = now;
+      player.vy += gravity * dt; player.y += player.vy * dt;
+      if (player.y >= ground) { player.y = ground; player.vy = 0; player.onGround = true; }
+      timer += dt;
+      if (timer > 70) { obstacles.push({ x: W, w: 24 + Math.random() * 16, h: 30 + Math.random() * 40, passed: false }); timer = 0; }
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        const o = obstacles[i]; o.x -= 5 * game.speed * dt;
+        if (player.x + 18 > o.x && player.x - 18 < o.x + o.w && player.y > ground - o.h) { alive = false; finishGame(ctx, game, score, false); return; }
+        if (o.x + o.w < player.x && !o.passed) { o.passed = true; score += 1; ctx.setHUD([{ icon: 'target', label: score + ' poin' }, { icon: 'list', label: 'Target ' + game.target }]); if (score >= game.target) { alive = false; finishGame(ctx, game, score, true); return; } }
+        if (o.x + o.w < 0) obstacles.splice(i, 1);
+      }
+      c.fillStyle = '#0b1220'; c.fillRect(0, 0, W, H);
+      c.strokeStyle = '#475569'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, ground + 20); c.lineTo(W, ground + 20); c.stroke();
+      c.fillStyle = '#ef4444'; obstacles.forEach(o => c.fillRect(o.x, ground + 20 - o.h, o.w, o.h));
+      c.fillStyle = '#22d3ee'; c.fillRect(player.x - 18, player.y - 36, 36, 36);
+      c.fillStyle = '#fff'; c.font = 'bold 22px sans-serif'; c.textAlign = 'left'; c.fillText('Skor ' + score, 16, 36);
+      raf = requestAnimationFrame(loop);
+    }
+    raf = requestAnimationFrame(loop);
+    ctx.setHUD([{ icon: 'target', label: '0 poin' }, { icon: 'list', label: 'Target ' + game.target }]);
+  }
+
+  /* ---------- Mechanic: CATCH ---------- */
+  function runCatch(ctx, game) {
+    const { canvas, hint, c } = makeCanvas(ctx);
+    hint.textContent = 'Geser mouse/touch atau panah kiri-kanan untuk menangkap item hijau.';
+    const W = canvas.width, H = canvas.height;
+    let paddleX = W / 2;
+    const paddleW = 90, paddleH = 16, paddleY = H - 40;
+    const items = [];
+    let timer = 0;
+    let score = 0;
+    let lives = 3;
+    let alive = true;
+    let raf = 0;
+    function movePaddle(x) { paddleX = clamp(x, paddleW / 2, W - paddleW / 2); }
+    const mm = (e) => { const r = canvas.getBoundingClientRect(); movePaddle((e.clientX - r.left) * (W / r.width)); };
+    const tm = (e) => { if (e.touches && e.touches[0]) { const r = canvas.getBoundingClientRect(); movePaddle((e.touches[0].clientX - r.left) * (W / r.width)); } };
+    canvas.addEventListener('mousemove', mm);
+    canvas.addEventListener('touchmove', tm, { passive: true });
+    const keyFn = (e) => {
+      if (e.code === 'ArrowLeft') { movePaddle(paddleX - 24); e.preventDefault(); }
+      if (e.code === 'ArrowRight') { movePaddle(paddleX + 24); e.preventDefault(); }
+    };
+    window.addEventListener('keydown', keyFn);
+    ctx.cleanup(() => { window.removeEventListener('keydown', keyFn); cancelAnimationFrame(raf); });
+    let last = performance.now();
+    function loop(now) {
+      if (!alive) return;
+      const dt = Math.min(2, (now - last) / 16.67); last = now;
+      timer += dt;
+      if (timer > 28) {
+        timer = 0;
+        const good = Math.random() < 0.7;
+        items.push({ x: 20 + Math.random() * (W - 40), y: -20, vy: 2.5 + Math.random() * 2 * game.speed, good });
+      }
+      for (let i = items.length - 1; i >= 0; i--) {
+        const it = items[i]; it.y += it.vy * dt;
+        if (it.y >= paddleY - 10 && it.y <= paddleY + 20 && Math.abs(it.x - paddleX) < paddleW / 2 + 12) {
+          if (it.good) { score += 10; Neko.audio.play('success'); }
+          else { lives -= 1; Neko.audio.play('error'); }
+          items.splice(i, 1);
+          ctx.setHUD([{ icon: 'target', label: score + ' poin' }, { icon: 'heart', label: lives + ' nyawa' }]);
+          if (lives <= 0) { alive = false; finishGame(ctx, game, score, false); return; }
+          if (score >= game.target * 10) { alive = false; finishGame(ctx, game, score, true); return; }
+          continue;
+        }
+        if (it.y > H + 20) items.splice(i, 1);
+      }
+      c.fillStyle = '#0b1220'; c.fillRect(0, 0, W, H);
+      items.forEach(it => { c.fillStyle = it.good ? '#22c55e' : '#ef4444'; c.beginPath(); c.arc(it.x, it.y, 12, 0, Math.PI * 2); c.fill(); });
+      c.fillStyle = '#38bdf8'; c.fillRect(paddleX - paddleW / 2, paddleY, paddleW, paddleH);
+      c.fillStyle = '#fff'; c.font = 'bold 20px sans-serif'; c.textAlign = 'left'; c.fillText('Nyawa: ' + lives, 16, 30);
+      raf = requestAnimationFrame(loop);
+    }
+    raf = requestAnimationFrame(loop);
+    ctx.setHUD([{ icon: 'target', label: '0 poin' }, { icon: 'heart', label: '3 nyawa' }]);
+  }
+
+  /* ---------- Mechanic: DODGE ---------- */
+  function runDodge(ctx, game) {
+    const { canvas, hint, c } = makeCanvas(ctx);
+    hint.textContent = 'Geser mouse/touch untuk menghindari objek merah. Bertahan 30 detik.';
+    const W = canvas.width, H = canvas.height;
+    let px = W / 2, py = H / 2;
+    const hazards = [];
+    let spawnT = 0;
+    let elapsed = 0;
+    let alive = true;
+    let raf = 0;
+    const DURATION = 30;
+    const mm = (e) => { const r = canvas.getBoundingClientRect(); px = (e.clientX - r.left) * (W / r.width); py = (e.clientY - r.top) * (H / r.height); };
+    const tm = (e) => { if (e.touches && e.touches[0]) { const r = canvas.getBoundingClientRect(); px = (e.touches[0].clientX - r.left) * (W / r.width); py = (e.touches[0].clientY - r.top) * (H / r.height); } };
+    canvas.addEventListener('mousemove', mm);
+    canvas.addEventListener('touchmove', tm, { passive: true });
+    ctx.cleanup(() => cancelAnimationFrame(raf));
+    let last = performance.now();
+    function loop(now) {
+      if (!alive) return;
+      const dt = Math.min(2, (now - last) / 16.67); last = now;
+      elapsed += dt / 60;
+      spawnT += dt;
+      if (spawnT > (22 - Math.min(12, elapsed))) { spawnT = 0; hazards.push({ x: Math.random() * W, y: -20, vy: 3 + Math.random() * 3 * game.speed, r: 10 + Math.random() * 8 }); }
+      for (let i = hazards.length - 1; i >= 0; i--) {
+        const hz = hazards[i]; hz.y += hz.vy * dt;
+        const d = Math.hypot(hz.x - px, hz.y - py);
+        if (d < hz.r + 12) { alive = false; finishGame(ctx, game, Math.round(elapsed * 10), false); return; }
+        if (hz.y > H + 30) hazards.splice(i, 1);
+      }
+      if (elapsed >= DURATION) { alive = false; finishGame(ctx, game, DURATION * 10, true, { stats: [{ label: 'Bertahan', value: DURATION + 's' }] }); return; }
+      c.fillStyle = '#0b1220'; c.fillRect(0, 0, W, H);
+      hazards.forEach(hz => { c.fillStyle = '#ef4444'; c.beginPath(); c.arc(hz.x, hz.y, hz.r, 0, Math.PI * 2); c.fill(); });
+      c.fillStyle = '#22c55e'; c.beginPath(); c.arc(px, py, 12, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#fff'; c.font = 'bold 20px sans-serif'; c.textAlign = 'left'; c.fillText('Waktu: ' + Math.ceil(DURATION - elapsed) + 's', 16, 30);
+      ctx.setHUD([{ icon: 'target', label: Math.round(elapsed) + 's' }, { icon: 'list', label: 'Target ' + DURATION + 's' }]);
+      raf = requestAnimationFrame(loop);
+    }
+    raf = requestAnimationFrame(loop);
+    ctx.setHUD([{ icon: 'target', label: '0s' }, { icon: 'list', label: 'Target ' + DURATION + 's' }]);
+  }
+
+  /* ---------- Mechanic: AIM ---------- */
+  function runAim(ctx, game) {
+    const { canvas, hint, c } = makeCanvas(ctx);
+    hint.textContent = 'Klik target hijau secepat mungkin dalam 30 detik.';
+    const W = canvas.width, H = canvas.height;
+    const targets = [];
+    let score = 0;
+    let elapsed = 0;
+    let alive = true;
+    let raf = 0;
+    const DURATION = 30;
+    let spawnT = 0;
+    function spawnTarget() { targets.push({ x: 30 + Math.random() * (W - 60), y: 60 + Math.random() * (H - 120), r: 22, life: 1.2, hit: false }); }
+    canvas.addEventListener('mousedown', (e) => {
+      if (!alive) return;
+      const r = canvas.getBoundingClientRect();
+      const x = (e.clientX - r.left) * (W / r.width);
+      const y = (e.clientY - r.top) * (H / r.height);
+      for (let i = targets.length - 1; i >= 0; i--) {
+        const t = targets[i];
+        if (Math.hypot(t.x - x, t.y - y) < t.r) {
+          t.hit = true; score += 10; Neko.audio.play('success');
+          ctx.setHUD([{ icon: 'target', label: score + ' poin' }, { icon: 'list', label: 'Target ' + (game.target * 10) }]);
+          if (score >= game.target * 10) { alive = false; finishGame(ctx, game, score, true); }
+          break;
+        }
+      }
+    });
+    ctx.cleanup(() => cancelAnimationFrame(raf));
+    let last = performance.now();
+    function loop(now) {
+      if (!alive) return;
+      const dt = Math.min(2, (now - last) / 16.67); last = now;
+      elapsed += dt / 60;
+      spawnT += dt;
+      if (spawnT > 18) { spawnT = 0; spawnTarget(); }
+      for (let i = targets.length - 1; i >= 0; i--) {
+        const t = targets[i]; t.life -= dt / 60;
+        if (t.life <= 0 || t.hit) targets.splice(i, 1);
+      }
+      if (elapsed >= DURATION) { alive = false; finishGame(ctx, game, score, score >= game.target * 10, { stats: [{ label: 'Waktu', value: DURATION + 's' }] }); return; }
+      c.fillStyle = '#0b1220'; c.fillRect(0, 0, W, H);
+      targets.forEach(t => { const alpha = Math.min(1, t.life); c.globalAlpha = alpha; c.fillStyle = '#22c55e'; c.beginPath(); c.arc(t.x, t.y, t.r, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1; });
+      c.fillStyle = '#fff'; c.font = 'bold 20px sans-serif'; c.textAlign = 'left'; c.fillText('Waktu: ' + Math.ceil(DURATION - elapsed) + 's', 16, 30);
+      raf = requestAnimationFrame(loop);
+    }
+    raf = requestAnimationFrame(loop);
+    ctx.setHUD([{ icon: 'target', label: '0 poin' }, { icon: 'list', label: 'Target ' + (game.target * 10) }]);
+  }
+
+  /* ---------- Mechanic: REFLEX ---------- */
+  function runReflex(ctx, game) {
+    const { canvas, hint, c } = makeCanvas(ctx);
+    hint.textContent = 'Klik saat kotak HIJAU muncul. Jangan klik merah.';
+    const W = canvas.width, H = canvas.height;
+    let state = 'idle';
+    let nextChange = 1 + Math.random() * 2;
+    let score = 0;
+    let lives = 3;
+    let alive = true;
+    let raf = 0;
+    canvas.addEventListener('mousedown', () => {
+      if (!alive) return;
+      if (state === 'green') {
+        score += 10; Neko.audio.play('success');
+        ctx.setHUD([{ icon: 'target', label: score + ' poin' }, { icon: 'heart', label: lives + ' nyawa' }]);
+        if (score >= game.target * 10) { alive = false; finishGame(ctx, game, score, true); }
+      } else if (state === 'red') {
+        lives -= 1; Neko.audio.play('error');
+        ctx.setHUD([{ icon: 'target', label: score + ' poin' }, { icon: 'heart', label: lives + ' nyawa' }]);
+        if (lives <= 0) { alive = false; finishGame(ctx, game, score, false); }
+      }
+    });
+    ctx.cleanup(() => cancelAnimationFrame(raf));
+    let last = performance.now();
+    function loop(now) {
+      if (!alive) return;
+      const dt = Math.min(2, (now - last) / 16.67); last = now;
+      nextChange -= dt / 60;
+      if (nextChange <= 0) {
+        const r = Math.random();
+        state = r < 0.45 ? 'green' : (r < 0.75 ? 'red' : 'idle');
+        nextChange = 0.6 + Math.random() * 1.6;
+      }
+      c.fillStyle = '#0b1220'; c.fillRect(0, 0, W, H);
+      let color = '#334155';
+      if (state === 'green') color = '#22c55e';
+      else if (state === 'red') color = '#ef4444';
+      c.fillStyle = color; c.fillRect(60, H / 2 - 80, W - 120, 160);
+      c.fillStyle = '#fff'; c.font = 'bold 36px sans-serif'; c.textAlign = 'center';
+      c.fillText(state === 'green' ? 'KLIK!' : (state === 'red' ? 'JANGAN!' : 'TUNGGU...'), W / 2, H / 2 + 12);
+      c.font = '18px sans-serif'; c.fillText('Nyawa: ' + lives, W / 2, H - 40);
+      raf = requestAnimationFrame(loop);
+    }
+    raf = requestAnimationFrame(loop);
+    ctx.setHUD([{ icon: 'target', label: '0 poin' }, { icon: 'heart', label: '3 nyawa' }]);
+  }
+
+  const RUNNERS = { flappy: runFlappy, runner: runRunner, catch: runCatch, dodge: runDodge, aim: runAim, reflex: runReflex };
+
+  GAMES.forEach(g => {
+    Neko.games[g.id] = {
+      mount(ctx) {
+        try {
+          const fn = RUNNERS[g.mechanic];
+          if (!fn) throw new Error('Mekanik tidak dikenal');
+          fn(ctx, g);
+        } catch (error) {
+          ctx.setStage('<div class="g-panel g-center"><span class="g-center-icon">' + icon('warning') + '</span><h2>Game gagal dimuat</h2><p>' + esc(error.message) + '</p></div>');
+        }
+      }
+    };
+  });
+
+  Neko.arcade50 = { games: GAMES };
+})();

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="paper" data-mode="dark" data-car="red">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>NEKO — Belajar TJKT Sambil Bermain</title>
+<meta name="description" content="NEKO adalah aplikasi belajar TJKT interaktif: buku materi, arena game, asisten Miko, delapan dunia tema, dan lima season XP.">
+<meta name="application-name" content="NEKO">
+<meta name="theme-color" content="#1b110b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NEKO">
+<!-- Alamat server NEKO kalau web dan server dipisah (mis. web di Vercel, server di Render).
+     Kosong = pakai alamat halaman ini sendiri. Bisa diganti lewat Pengaturan → Server. -->
+<meta name="neko-server-base" content="">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="./public/icons/neko-32.png">
+<link rel="apple-touch-icon" href="./public/icons/apple-touch-icon.png">
+<link rel="manifest" href="./manifest.webmanifest">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Chakra+Petch:wght@500;600;700&family=Exo+2:wght@400;500;600;700;800&family=Fredoka:wght@400;500;600;700&family=Lilita+One&family=Nunito:wght@400;600;700;800;900&family=Orbitron:wght@500;600;700;800;900&family=Patrick+Hand&family=Quicksand:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=Sora:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"> -->
+
+<link rel="stylesheet" href="./css/base.css?v=3.0.42">
+<link rel="stylesheet" href="./css/layout.css?v=3.0.42">
+<link rel="stylesheet" href="./css/components.css?v=3.0.42">
+<link rel="stylesheet" href="./css/themes.css?v=3.0.42">
+<link rel="stylesheet" href="./css/polish.css?v=3.0.42">
+<link rel="stylesheet" href="./css/paper.css?v=3.0.42">
+<link rel="stylesheet" href="./css/scenes.css?v=3.0.42">
+<link rel="stylesheet" href="./css/ornaments.css?v=3.0.42">
+<link rel="stylesheet" href="./css/book.css?v=3.0.42">
+<link rel="stylesheet" href="./css/games.css?v=3.0.42">
+<link rel="stylesheet" href="./css/views.css?v=3.0.42">
+<link rel="stylesheet" href="./css/social.css?v=3.0.42">
+<link rel="stylesheet" href="./css/live.css?v=3.0.42">
+<link rel="stylesheet" href="./css/rooms.css?v=3.0.42">
+<link rel="stylesheet" href="./css/nobar.css?v=3.0.42">
+<link rel="stylesheet" href="./css/nobar.css?v=3.0.42">
+<link rel="stylesheet" href="./css/messages.css?v=3.0.42">
+<link rel="stylesheet" href="./css/avatars.css?v=3.0.42">
+<link rel="stylesheet" href="./css/intro.css?v=3.0.42">
+<link rel="stylesheet" href="./css/glass.css?v=3.0.42">
+
+<script>
+(function () {
+  try {
+    var prefs = JSON.parse(localStorage.getItem('neko_prefs_v2') || '{}');
+    var known = ['paper', 'default', 'forest', 'ocean', 'candy', 'red', 'car', 'astronaut'];
+    var theme = known.indexOf(prefs.theme) >= 0 ? prefs.theme : 'paper';
+    var mode = prefs.mode === 'light' ? 'light' : 'dark';
+    if (theme === 'car') mode = 'dark';
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.mode = mode;
+    document.documentElement.dataset.car = ['red', 'blue', 'pink'].includes(prefs.carColor) ? prefs.carColor : 'red';
+  } catch (error) {
+    document.documentElement.dataset.theme = 'paper';
+    document.documentElement.dataset.mode = 'dark';
+    document.documentElement.dataset.car = 'red';
+  }
+})();
+</script>
+</head>
+<body>
+
+<div id="scene" class="scene" aria-hidden="true"></div>
+
+<div id="loader" class="loader" role="status"k aria-live="polite">
+  <div class="loader-aura" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="loader-inner">
+    <div class="loader-mark"><span class="logo-mask"></span></div>
+    <div class="loader-word">Neko<span class="loader-dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></div>
+    <div class="loader-track"><span id="loaderBar"></span></div>
+    <p class="loader-status" id="loaderStatus">Menyiapkan dunia NEKO…</p>
+  </div>
+  <div class="loader-corner" aria-hidden="true">Belajar sambil bermain</div>
+</div>
+
+<section id="auth" class="auth" aria-label="Masuk ke NEKO" hidden>
+  <div class="auth-top">
+    <div class="auth-mini-brand"><span class="logo-mask" aria-hidden="true"></span><span>NEKO</span></div>
+    <div class="auth-theme-dots" id="authThemeDots" role="group" aria-label="Pratinjau tema"></div>
+  </div>
+  <div class="auth-layout">
+    <div class="auth-copy">
+      <div class="auth-mark"><span class="logo-mask" aria-hidden="true"></span></div>
+      <h1 class="auth-word">Neko<span class="dot-run" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></h1>
+      <p class="auth-tagline">Belajar TJKT sambil bermain. Pilih duniamu, baca buku interaktif, tantang teman di arena, dan tumbuh bersama Miko.</p>
+      <div class="auth-chips" aria-hidden="true">
+        <span class="mini-chip">8 dunia tema</span>
+        <span class="mini-chip">5 season XP</span>
+        <span class="mini-chip">8 game arena</span>
+      </div>
+    </div>
+    <div class="auth-card" id="authCard">
+      <div class="auth-tabs" role="tablist" aria-label="Masuk atau daftar">
+        <button type="button" class="active" data-auth-tab="login" role="tab" aria-selected="true">Masuk</button>
+        <button type="button" data-auth-tab="register" role="tab" aria-selected="false">Buat akun</button>
+      </div>
+      <div class="auth-card-head">
+        <span class="kicker" id="authKicker">AKUN NEKO</span>
+        <h2 id="authTitle">Selamat datang kembali</h2>
+        <p id="authSub">Lanjutkan perjalananmu dari tempat terakhir.</p>
+      </div>
+      <form id="authForm" data-auth-form novalidate>
+        <div class="field" id="authNameField" hidden>
+          <label for="authDisplayName">Nama tampilan</label>
+          <input id="authDisplayName" name="displayName" autocomplete="name" placeholder="Contoh: Ivander" maxlength="48">
+        </div>
+        <div class="field">
+          <label for="authUsername">Username</label>
+          <input id="authUsername" name="username" autocomplete="username" placeholder="Huruf, angka, titik, atau garis" maxlength="24" autocapitalize="none" spellcheck="false" required>
+        </div>
+        <div class="field">
+          <label for="authPin">PIN <span class="label-soft">6–12 angka</span></label>
+          <div class="pin-wrap">
+            <input id="authPin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••••" minlength="6" maxlength="12" pattern="[0-9]{6,12}" required>
+            <button type="button" class="pin-toggle" id="pinToggle" aria-label="Tampilkan PIN" aria-pressed="false"><span data-icon="eye"></span></button>
+          </div>
+        </div>
+        <div class="form-error" id="authError" role="status" aria-live="polite"></div>
+        <button class="btn btn-primary btn-block btn-auth" type="submit" id="authSubmit">Masuk ke NEKO <span data-icon="arrow-right"></span></button>
+      </form>
+      <div class="auth-note"><span data-icon="lock"></span><span class="auth-note-text">Akun tersimpan di server NEKO agar datamu mengikuti akun di perangkat lain. PIN di-hash, bukan teks biasa.</span></div>
+    </div>
+  </div>
+  <div class="auth-foot">
+    <span>NEKO • Media pembelajaran interaktif</span>
+  </div>
+</section>
+
+<div id="app" class="app" hidden>
+  <aside class="sidebar" id="sidebar" aria-label="Navigasi samping"></aside>
+  <div class="app-main">
+    <header class="topbar" id="topbar"></header>
+    <main class="view-root" id="view" tabindex="-1"></main>
+    <nav class="dock" id="dock" aria-label="Navigasi utama"></nav>
+  </div>
+</div>
+
+<div id="overlayRoot" class="overlay-root"></div>
+<div id="toastRoot" class="toast-root" aria-live="polite" aria-atomic="false"></div>
+<div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
+<div id="mascotRoot"></div>
+<div id="themeLayer" class="theme-layer" aria-hidden="true"></div>
+
+<script src="./data/materials.js?v=3.0.42"></script>
+<script src="./data/materials-mega.js?v=3.0.42"></script>
+<script src="./data/materials-koding.js?v=3.0.42"></script>
+<script src="./data/materials-desain.js?v=3.0.42"></script>
+<script src="./data/quiz.js?v=3.0.42"></script>
+<script src="./data/spy-words.js?v=3.0.42"></script>
+<script src="./data/netgames.js?v=3.0.42"></script>
+<script src="./js/util.js?v=3.0.42"></script>
+<script src="./js/api.js?v=3.0.42"></script>
+<script src="./js/icons.js?v=3.0.42"></script>
+<script src="./js/audio.js?v=3.0.42"></script>
+<script src="./js/voice.js?v=3.0.42"></script>
+<script src="./js/rooms.js?v=3.0.42"></script>
+<script src="./js/nobar.js?v=3.0.42"></script>
+<script src="./js/seasons.js?v=3.0.42"></script>
+<script src="./js/store.js?v=3.0.42"></script>
+<script src="./js/theme.js?v=3.0.42"></script>
+<script src="./js/scenes.js?v=3.0.42"></script>
+<script src="./js/ornaments.js?v=3.0.42"></script>
+<script src="./js/ui.js?v=3.0.42"></script>
+<script src="./js/community.js?v=3.0.42"></script>
+<script src="./js/admin.js?v=3.0.42"></script>
+<script src="./js/fx.js?v=3.0.42"></script>
+<script src="./js/auth.js?v=3.0.42"></script>
+<script src="./js/home.js?v=3.0.42"></script>
+<script src="./js/book.js?v=3.0.42"></script>
+<script src="./js/arena.js?v=3.0.42"></script>
+<script src="./js/live.js?v=3.0.42"></script>
+<script src="./js/friends.js?v=3.0.42"></script>
+<script src="./js/games/quiz.js?v=3.0.42"></script>
+<script src="./data/spy.js?v=3.0.42"></script>
+<script src="./js/games/cable.js?v=3.0.42"></script>
+<script src="./js/games/memory.js?v=3.0.42"></script>
+<script src="./js/games/subnet.js?v=3.0.42"></script>
+<script src="./js/games/osi.js?v=3.0.42"></script>
+<script src="./js/games/detective.js?v=3.0.42"></script>
+<script src="./js/games/reaction.js?v=3.0.42"></script>
+<script src="./js/games/simon.js?v=3.0.42"></script>
+<script src="./js/games/portrush.js?v=3.0.42"></script>
+<script src="./js/games/merge.js?v=3.0.42"></script>
+<script src="./js/games/typing.js?v=3.0.42"></script>
+<script src="./js/games/netquest.js?v=3.0.42"></script>
+<script src="./js/games/arcade50.js?v=3.0.42"></script>
+<script src="./js/games/networksnake.js?v=3.0.42"></script>
+<script src="./js/games/blockdrop.js?v=3.0.42"></script>
+<script src="./js/games/bubblepop.js?v=3.0.42"></script>
+<script src="./js/spy-v2.js?v=3.0.42"></script>
+<script src="./js/profile.js?v=3.0.42"></script>
+<script src="./js/avatars.js?v=3.0.42"></script>
+<script src="./js/mascot.js?v=3.0.42"></script>
+<script src="./js/contact.js?v=3.0.42"></script>
+<script src="./js/intro.js?v=3.0.42"></script>
+<script src="./js/app.js?v=3.0.42"></script>
+</body>
+</html>

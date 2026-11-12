@@ -1,0 +1,718 @@
+/* ============================================================
+   NEKO · themes.css
+   Tujuh dunia: Default, Hutan, Ocean, Candy, Merah, Car, Astronot.
+   ============================================================ */
+
+/* Dua jenis permukaan: "-solid" untuk isi/kartu (tidak tem pandang),
+   "-glass" untuk batang & krom yang sungguh memakai blur ala iOS.
+   Nilai di bawah hanya cadangan; tiap tema menggantinya sendiri. */
+:root {
+  --surface-solid: #101f38;
+  --surface-glass: rgba(16, 31, 56, .8);
+  --surface-2-solid: #1c2f4e;
+  --surface-2-glass: rgba(28, 47, 78, .72);
+  --glass-blur: blur(26px) saturate(180%) brightness(1.04);
+}
+
+/* ------------------------------------------------------------
+   1. DEFAULT — Network Console (komputer & jaringan)
+   ------------------------------------------------------------ */
+
+html[data-theme="default"][data-mode="dark"] {
+  --bg: #070d18;
+  --bg-2: #0b1830;
+  --surface: rgba(16, 31, 56, .74);
+  --surface-solid: rgb(16, 31, 56);
+  --surface-glass: rgba(16, 31, 56, .8);
+  --surface-2: rgba(28, 47, 78, .62);
+  --surface-2-solid: rgb(28, 47, 78);
+  --surface-2-glass: rgba(28, 47, 78, .72);
+  --surface-3: rgba(148, 200, 255, .09);
+  --ink: #eef7ff;
+  --ink-2: #cfe3f8;
+  --muted: #90a9c5;
+  --line: rgba(150, 200, 255, .16);
+  --line-strong: rgba(170, 215, 255, .3);
+  --accent: #25e2ff;
+  --accent-2: #7c74ff;
+  --accent-3: #3dffb0;
+  --accent-ink: #03121d;
+  --success: #3dffb0;
+  --danger: #ff5d7a;
+  --warn: #ffb454;
+  --shadow: 0 30px 80px -30px rgba(0, 0, 0, .8);
+  --shadow-soft: 0 14px 36px -18px rgba(0, 0, 0, .65);
+  --dock-bg: rgba(8, 18, 34, .9);
+  --overlay-bg: rgba(2, 7, 16, .74);
+  --font-display: "Space Grotesk", "Sora", sans-serif;
+  --font-body: "Sora", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  color-scheme: dark;
+}
+
+html[data-theme="default"][data-mode="light"] {
+  --bg: #eaf2ff;
+  --bg-2: #dbe9ff;
+  --surface: rgba(255, 255, 255, .74);
+  --surface-solid: rgb(255, 255, 255);
+  --surface-glass: rgba(255, 255, 255, .8);
+  --surface-2: rgba(255, 255, 255, .58);
+  --surface-2-solid: rgb(255, 255, 255);
+  --surface-2-glass: rgba(255, 255, 255, .72);
+  --surface-3: rgba(12, 60, 120, .07);
+  --ink: #0a1c36;
+  --ink-2: #244066;
+  --muted: #5a7194;
+  --line: rgba(20, 60, 120, .15);
+  --line-strong: rgba(20, 60, 120, .3);
+  --accent: #0077e6;
+  --accent-2: #6548ff;
+  --accent-3: #00a98a;
+  --accent-ink: #ffffff;
+  --success: #009e70;
+  --danger: #d9274d;
+  --warn: #b96a00;
+  --shadow: 0 30px 70px -38px rgba(30, 70, 140, .45);
+  --shadow-soft: 0 14px 34px -20px rgba(30, 70, 140, .35);
+  --dock-bg: rgba(255, 255, 255, .86);
+  --overlay-bg: rgba(10, 30, 60, .4);
+  --font-display: "Space Grotesk", "Sora", sans-serif;
+  --font-body: "Sora", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  color-scheme: light;
+}
+
+/* ------------------------------------------------------------
+   2. FOREST — hutan, gunung, burung
+   ------------------------------------------------------------ */
+
+html[data-theme="forest"][data-mode="dark"] {
+  --bg: #06150f;
+  --bg-2: #0b2418;
+  --surface: rgba(13, 41, 28, .74);
+  --surface-solid: rgb(13, 41, 28);
+  --surface-glass: rgba(13, 41, 28, .8);
+  --surface-2: rgba(20, 56, 38, .6);
+  --surface-2-solid: rgb(20, 56, 38);
+  --surface-2-glass: rgba(20, 56, 38, .72);
+  --surface-3: rgba(190, 255, 205, .08);
+  --ink: #effbf2;
+  --ink-2: #cfe9d5;
+  --muted: #9dbfa8;
+  --line: rgba(170, 230, 185, .16);
+  --line-strong: rgba(180, 240, 195, .32);
+  --accent: #6ee7a0;
+  --accent-2: #ffd166;
+  --accent-3: #35b9a0;
+  --accent-ink: #042215;
+  --success: #6ee7a0;
+  --danger: #ff7a6b;
+  --warn: #ffd166;
+  --shadow: 0 30px 80px -30px rgba(0, 0, 0, .8);
+  --shadow-soft: 0 14px 36px -18px rgba(0, 0, 0, .6);
+  --dock-bg: rgba(8, 27, 18, .9);
+  --overlay-bg: rgba(3, 14, 9, .74);
+  --font-display: "Baloo 2", "Nunito", sans-serif;
+  --font-body: "Nunito", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --radius-card: 28px;
+  --radius-btn: 18px;
+  color-scheme: dark;
+}
+
+html[data-theme="forest"][data-mode="light"] {
+  --bg: #f0f8e6;
+  --bg-2: #dff0cd;
+  --surface: rgba(255, 255, 255, .72);
+  --surface-solid: rgb(255, 255, 255);
+  --surface-glass: rgba(255, 255, 255, .8);
+  --surface-2: rgba(255, 255, 255, .54);
+  --surface-2-solid: rgb(255, 255, 255);
+  --surface-2-glass: rgba(255, 255, 255, .72);
+  --surface-3: rgba(35, 95, 45, .07);
+  --ink: #1a2f1d;
+  --ink-2: #34503a;
+  --muted: #5e7358;
+  --line: rgba(45, 100, 55, .16);
+  --line-strong: rgba(40, 100, 50, .32);
+  --accent: #1f9d55;
+  --accent-2: #d98a1f;
+  --accent-3: #0f8a85;
+  --accent-ink: #ffffff;
+  --success: #128a4a;
+  --danger: #cc3b2c;
+  --warn: #b87400;
+  --shadow: 0 30px 70px -38px rgba(35, 85, 40, .42);
+  --shadow-soft: 0 14px 34px -20px rgba(35, 85, 40, .32);
+  --dock-bg: rgba(255, 255, 255, .86);
+  --overlay-bg: rgba(20, 45, 25, .38);
+  --font-display: "Baloo 2", "Nunito", sans-serif;
+  --font-body: "Nunito", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --radius-card: 28px;
+  --radius-btn: 18px;
+  color-scheme: light;
+}
+
+/* ------------------------------------------------------------
+   3. OCEAN — mode terang: bawah laut penuh
+              mode gelap: separuh laut, separuh langit malam
+   ------------------------------------------------------------ */
+
+html[data-theme="ocean"][data-mode="light"] {
+  --bg: #dff7fb;
+  --bg-2: #b9eefa;
+  --surface: rgba(255, 255, 255, .66);
+  --surface-solid: rgb(255, 255, 255);
+  --surface-glass: rgba(255, 255, 255, .8);
+  --surface-2: rgba(255, 255, 255, .5);
+  --surface-2-solid: rgb(255, 255, 255);
+  --surface-2-glass: rgba(255, 255, 255, .72);
+  --surface-3: rgba(0, 90, 120, .08);
+  --ink: #043a4d;
+  --ink-2: #115a70;
+  --muted: #3f7185;
+  --line: rgba(0, 90, 120, .16);
+  --line-strong: rgba(0, 90, 120, .32);
+  --accent: #009fd6;
+  --accent-2: #3b7dff;
+  --accent-3: #00b894;
+  --accent-ink: #ffffff;
+  --success: #009c7c;
+  --danger: #d6455a;
+  --warn: #c07a00;
+  --shadow: 0 30px 70px -38px rgba(0, 80, 110, .4);
+  --shadow-soft: 0 14px 34px -20px rgba(0, 80, 110, .3);
+  --dock-bg: rgba(255, 255, 255, .8);
+  --overlay-bg: rgba(0, 50, 70, .4);
+  --font-display: "Quicksand", "Nunito", sans-serif;
+  --font-body: "Quicksand", "Nunito", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --radius-card: 30px;
+  --radius-btn: 20px;
+  color-scheme: light;
+}
+
+html[data-theme="ocean"][data-mode="dark"] {
+  --bg: #041426;
+  --bg-2: #082c46;
+  --surface: rgba(8, 39, 62, .72);
+  --surface-solid: rgb(8, 39, 62);
+  --surface-glass: rgba(8, 39, 62, .8);
+  --surface-2: rgba(12, 55, 84, .58);
+  --surface-2-solid: rgb(12, 55, 84);
+  --surface-2-glass: rgba(12, 55, 84, .72);
+  --surface-3: rgba(150, 235, 255, .09);
+  --ink: #eafcff;
+  --ink-2: #c4eaf5;
+  --muted: #92c2d6;
+  --line: rgba(130, 220, 255, .16);
+  --line-strong: rgba(150, 235, 255, .32);
+  --accent: #3fe0ff;
+  --accent-2: #4d8dff;
+  --accent-3: #8fffe0;
+  --accent-ink: #02202b;
+  --success: #5fffd0;
+  --danger: #ff6f8f;
+  --warn: #ffc766;
+  --shadow: 0 30px 80px -30px rgba(0, 0, 0, .8);
+  --shadow-soft: 0 14px 36px -18px rgba(0, 0, 0, .6);
+  --dock-bg: rgba(3, 24, 40, .9);
+  --overlay-bg: rgba(1, 12, 22, .76);
+  --font-display: "Quicksand", "Nunito", sans-serif;
+  --font-body: "Quicksand", "Nunito", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --radius-card: 30px;
+  --radius-btn: 20px;
+  color-scheme: dark;
+}
+
+/* ------------------------------------------------------------
+   4. CANDY — pink imut, squishy, penuh boneka & pita
+   ------------------------------------------------------------ */
+
+html[data-theme="candy"][data-mode="light"] {
+  --bg: #fff1f7;
+  --bg-2: #ffe0ee;
+  --surface: rgba(255, 255, 255, .76);
+  --surface-solid: rgb(255, 255, 255);
+  --surface-glass: rgba(255, 255, 255, .8);
+  --surface-2: rgba(255, 255, 255, .58);
+  --surface-2-solid: rgb(255, 255, 255);
+  --surface-2-glass: rgba(255, 255, 255, .72);
+  --surface-3: rgba(200, 70, 130, .08);
+  --ink: #5a2342;
+  --ink-2: #7d3c5e;
+  --muted: #8d5573;
+  --line: rgba(200, 80, 130, .18);
+  --line-strong: rgba(200, 70, 130, .36);
+  --accent: #ff5fa2;
+  --accent-2: #ff9bc8;
+  --accent-3: #b186ff;
+  --accent-ink: #ffffff;
+  --success: #e0508f;
+  --danger: #e3425f;
+  --warn: #d98000;
+  --shadow: 0 30px 60px -32px rgba(214, 90, 150, .45);
+  --shadow-soft: 0 16px 36px -22px rgba(214, 90, 150, .38);
+  --dock-bg: rgba(255, 255, 255, .88);
+  --overlay-bg: rgba(110, 30, 65, .36);
+  --font-display: "Fredoka", "Nunito", sans-serif;
+  --font-body: "Nunito", "Fredoka", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --radius-card: 30px;
+  --radius-btn: 22px;
+  --btn-lift: -2px;
+  color-scheme: light;
+}
+
+html[data-theme="candy"][data-mode="dark"] {
+  --bg: #2a0f20;
+  --bg-2: #451932;
+  --surface: rgba(78, 29, 54, .72);
+  --surface-solid: rgb(78, 29, 54);
+  --surface-glass: rgba(78, 29, 54, .8);
+  --surface-2: rgba(98, 40, 69, .58);
+  --surface-2-solid: rgb(98, 40, 69);
+  --surface-2-glass: rgba(98, 40, 69, .72);
+  --surface-3: rgba(255, 190, 220, .1);
+  --ink: #fff1f8;
+  --ink-2: #f6cfe0;
+  --muted: #d9a3bf;
+  --line: rgba(255, 175, 210, .18);
+  --line-strong: rgba(255, 185, 215, .34);
+  --accent: #ff74b3;
+  --accent-2: #d9a2ff;
+  --accent-3: #ffd18a;
+  --accent-ink: #3a0b22;
+  --success: #ffb1d2;
+  --danger: #ff5d81;
+  --warn: #ffd18a;
+  --shadow: 0 30px 80px -30px rgba(0, 0, 0, .8);
+  --shadow-soft: 0 14px 36px -18px rgba(0, 0, 0, .6);
+  --dock-bg: rgba(42, 15, 32, .9);
+  --overlay-bg: rgba(24, 6, 17, .76);
+  --font-display: "Fredoka", "Nunito", sans-serif;
+  --font-body: "Nunito", "Fredoka", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --radius-card: 30px;
+  --radius-btn: 22px;
+  --btn-lift: -2px;
+  color-scheme: dark;
+}
+
+html[data-theme="candy"] .btn {
+  font-weight: 800;
+}
+
+html[data-theme="candy"] .btn:hover {
+  transform: translateY(-2px) scale(1.025);
+}
+
+html[data-theme="candy"] .btn:active {
+  transform: scale(.92);
+}
+
+html[data-theme="candy"] .btn-primary {
+  box-shadow: 0 10px 24px -12px rgba(255, 95, 162, .8), inset 0 -3px 0 rgba(160, 30, 90, .18);
+}
+
+html[data-theme="candy"] .card {
+  box-shadow: 0 18px 40px -30px rgba(214, 90, 150, .55), inset 0 1px 0 rgba(255, 255, 255, .6);
+}
+
+html[data-theme="candy"] .dock {
+  border-radius: 28px;
+}
+
+html[data-theme="candy"] .dock-btn {
+  border-radius: 20px;
+  transition-duration: .35s;
+}
+
+html[data-theme="candy"] .dock-btn:active {
+  transform: scale(.9);
+}
+
+html[data-theme="candy"] .dock-btn.on {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface-3));
+}
+
+html[data-theme="candy"] .sheet {
+  border-radius: 32px 32px 0 0;
+}
+
+html[data-theme="candy"] .topbar-inner {
+  border-radius: 26px;
+}
+
+html[data-theme="candy"] .theme-card {
+  border-radius: 22px;
+}
+
+@media (min-width: 720px) {
+  html[data-theme="candy"] .sheet {
+    border-radius: 34px;
+  }
+}
+
+/* ------------------------------------------------------------
+   5. RED — laboratorium merah, energi tinggi
+   ------------------------------------------------------------ */
+
+html[data-theme="red"][data-mode="dark"] {
+  --bg: #160609;
+  --bg-2: #2b0a11;
+  --surface: rgba(55, 14, 22, .74);
+  --surface-solid: rgb(55, 14, 22);
+  --surface-glass: rgba(55, 14, 22, .8);
+  --surface-2: rgba(78, 21, 31, .6);
+  --surface-2-solid: rgb(78, 21, 31);
+  --surface-2-glass: rgba(78, 21, 31, .72);
+  --surface-3: rgba(255, 170, 160, .09);
+  --ink: #fff1f2;
+  --ink-2: #f3cbd0;
+  --muted: #d49aa0;
+  --line: rgba(255, 150, 150, .17);
+  --line-strong: rgba(255, 160, 155, .34);
+  --accent: #ff4d5e;
+  --accent-2: #ff9a3d;
+  --accent-3: #ff2e88;
+  --accent-ink: #210307;
+  --success: #ffb45d;
+  --danger: #ff4d5e;
+  --warn: #ffb45d;
+  --shadow: 0 30px 80px -30px rgba(0, 0, 0, .85);
+  --shadow-soft: 0 14px 36px -18px rgba(0, 0, 0, .65);
+  --dock-bg: rgba(26, 5, 9, .92);
+  --overlay-bg: rgba(13, 2, 5, .8);
+  --font-display: "Rajdhani", "Sora", sans-serif;
+  --font-body: "Rajdhani", "Sora", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --radius-card: 20px;
+  --radius-btn: 13px;
+  color-scheme: dark;
+}
+
+html[data-theme="red"][data-mode="light"] {
+  --bg: #fff0f0;
+  --bg-2: #ffdede;
+  --surface: rgba(255, 255, 255, .76);
+  --surface-solid: rgb(255, 255, 255);
+  --surface-glass: rgba(255, 255, 255, .8);
+  --surface-2: rgba(255, 255, 255, .58);
+  --surface-2-solid: rgb(255, 255, 255);
+  --surface-2-glass: rgba(255, 255, 255, .72);
+  --surface-3: rgba(160, 20, 40, .07);
+  --ink: #3a0a10;
+  --ink-2: #63202a;
+  --muted: #8d5a60;
+  --line: rgba(160, 30, 45, .16);
+  --line-strong: rgba(160, 30, 45, .34);
+  --accent: #d61f3c;
+  --accent-2: #e06a12;
+  --accent-3: #b3125e;
+  --accent-ink: #ffffff;
+  --success: #b26b00;
+  --danger: #c91532;
+  --warn: #b26b00;
+  --shadow: 0 30px 70px -38px rgba(150, 30, 45, .4);
+  --shadow-soft: 0 14px 34px -20px rgba(150, 30, 45, .3);
+  --dock-bg: rgba(255, 255, 255, .86);
+  --overlay-bg: rgba(80, 10, 20, .4);
+  --font-display: "Rajdhani", "Sora", sans-serif;
+  --font-body: "Rajdhani", "Sora", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --radius-card: 20px;
+  --radius-btn: 13px;
+  color-scheme: light;
+}
+
+html[data-theme="red"] .kicker,
+html[data-theme="red"] .eyebrow {
+  letter-spacing: .2em;
+}
+
+html[data-theme="red"] .btn {
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-size: 12px;
+}
+
+html[data-theme="red"] .card {
+  border-radius: 18px;
+}
+
+/* ------------------------------------------------------------
+   6. CAR — mode gelap saja, warna mobil merah / biru / pink
+   ------------------------------------------------------------ */
+
+html[data-theme="car"] {
+  --bg: #07080f;
+  --bg-2: #111522;
+  --surface: rgba(20, 25, 40, .8);
+  --surface-solid: rgb(20, 25, 40);
+  --surface-glass: rgba(20, 25, 40, .8);
+  --surface-2: rgba(30, 37, 58, .66);
+  --surface-2-solid: rgb(30, 37, 58);
+  --surface-2-glass: rgba(30, 37, 58, .72);
+  --surface-3: rgba(200, 220, 255, .08);
+  --ink: #f4f7ff;
+  --ink-2: #cdd6ee;
+  --muted: #98a3c0;
+  --line: rgba(170, 195, 255, .16);
+  --line-strong: rgba(180, 205, 255, .32);
+  --accent: #ff3b3b;
+  --accent-2: #ff8a3d;
+  --accent-3: #ffd166;
+  --accent-ink: #1a0305;
+  --success: #57e39b;
+  --danger: #ff4d5e;
+  --warn: #ffc14d;
+  --shadow: 0 30px 80px -30px rgba(0, 0, 0, .9);
+  --shadow-soft: 0 14px 36px -18px rgba(0, 0, 0, .7);
+  --dock-bg: rgba(10, 12, 20, .94);
+  --overlay-bg: rgba(3, 4, 8, .84);
+  --font-display: "Chakra Petch", "Rajdhani", sans-serif;
+  --font-body: "Chakra Petch", "Rajdhani", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --radius-card: 18px;
+  --radius-btn: 11px;
+  --btn-lift: -2px;
+  --car-dot: #ff3b3b;
+  color-scheme: dark;
+}
+
+html[data-theme="car"][data-car="red"] {
+  --accent: #ff3b3b;
+  --accent-2: #ff8a3d;
+  --accent-3: #ffd166;
+  --accent-ink: #1a0305;
+  --car-dot: #ff3b3b;
+}
+
+html[data-theme="car"][data-car="blue"] {
+  --accent: #38a7ff;
+  --accent-2: #6a5cff;
+  --accent-3: #52e0ff;
+  --accent-ink: #02101f;
+  --car-dot: #38a7ff;
+}
+
+html[data-theme="car"][data-car="pink"] {
+  --accent: #ff5cae;
+  --accent-2: #b28bff;
+  --accent-3: #ffa8d8;
+  --accent-ink: #250516;
+  --car-dot: #ff5cae;
+}
+
+html[data-theme="car"] .btn {
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+html[data-theme="car"] .btn-primary {
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  border-radius: 4px;
+}
+
+html[data-theme="car"] .card {
+  border-radius: 16px;
+  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px));
+}
+
+html[data-theme="car"] .card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 2px;
+  background: var(--accent);
+  opacity: .7;
+}
+
+html[data-theme="car"] .dock {
+  border-radius: 16px;
+}
+
+html[data-theme="car"] .dock-btn {
+  border-radius: 10px;
+}
+
+html[data-theme="car"] .topbar-inner {
+  border-radius: 14px;
+}
+
+html[data-theme="car"] .sheet {
+  border-radius: 24px 24px 0 0;
+}
+
+@media (min-width: 720px) {
+  html[data-theme="car"] .sheet {
+    border-radius: 20px;
+  }
+}
+
+html[data-theme="car"] .theme-card {
+  border-radius: 12px;
+}
+
+html[data-theme="car"] .chip,
+html[data-theme="car"] .pill {
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-size: 9.5px;
+}
+
+/* ------------------------------------------------------------
+   7. ASTRONAUT — luar angkasa, meteor, alien
+   ------------------------------------------------------------ */
+
+html[data-theme="astronaut"][data-mode="dark"] {
+  --bg: #05030f;
+  --bg-2: #0e0a26;
+  --surface: rgba(22, 18, 48, .74);
+  --surface-solid: rgb(22, 18, 48);
+  --surface-glass: rgba(22, 18, 48, .8);
+  --surface-2: rgba(33, 27, 68, .6);
+  --surface-2-solid: rgb(33, 27, 68);
+  --surface-2-glass: rgba(33, 27, 68, .72);
+  --surface-3: rgba(210, 190, 255, .09);
+  --ink: #f4f0ff;
+  --ink-2: #d9d1f5;
+  --muted: #a79cc9;
+  --line: rgba(190, 175, 255, .18);
+  --line-strong: rgba(200, 185, 255, .34);
+  --accent: #b38cff;
+  --accent-2: #58d9ff;
+  --accent-3: #ffd36e;
+  --accent-ink: #100726;
+  --success: #6effc6;
+  --danger: #ff6f9c;
+  --warn: #ffd36e;
+  --shadow: 0 30px 80px -30px rgba(0, 0, 0, .9);
+  --shadow-soft: 0 14px 36px -18px rgba(0, 0, 0, .7);
+  --dock-bg: rgba(8, 5, 22, .92);
+  --overlay-bg: rgba(2, 1, 10, .84);
+  --font-display: "Orbitron", "Exo 2", sans-serif;
+  --font-body: "Exo 2", "Nunito", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --radius-card: 26px;
+  --radius-btn: 16px;
+  color-scheme: dark;
+}
+
+html[data-theme="astronaut"][data-mode="light"] {
+  --bg: #e9e7ff;
+  --bg-2: #d6d2ff;
+  --surface: rgba(255, 255, 255, .7);
+  --surface-solid: rgb(255, 255, 255);
+  --surface-glass: rgba(255, 255, 255, .8);
+  --surface-2: rgba(255, 255, 255, .54);
+  --surface-2-solid: rgb(255, 255, 255);
+  --surface-2-glass: rgba(255, 255, 255, .72);
+  --surface-3: rgba(70, 50, 160, .08);
+  --ink: #1c1540;
+  --ink-2: #3b3168;
+  --muted: #615a86;
+  --line: rgba(80, 60, 180, .16);
+  --line-strong: rgba(80, 60, 180, .32);
+  --accent: #6b4dff;
+  --accent-2: #008fc4;
+  --accent-3: #c47a00;
+  --accent-ink: #ffffff;
+  --success: #008f6d;
+  --danger: #d82f6b;
+  --warn: #a97000;
+  --shadow: 0 30px 70px -38px rgba(60, 40, 140, .42);
+  --shadow-soft: 0 14px 34px -20px rgba(60, 40, 140, .32);
+  --dock-bg: rgba(255, 255, 255, .84);
+  --overlay-bg: rgba(30, 20, 80, .4);
+  --font-display: "Orbitron", "Exo 2", sans-serif;
+  --font-body: "Exo 2", "Nunito", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --radius-card: 26px;
+  --radius-btn: 16px;
+  color-scheme: light;
+}
+
+html[data-theme="astronaut"] .kicker,
+html[data-theme="astronaut"] .eyebrow {
+  letter-spacing: .22em;
+}
+
+html[data-theme="astronaut"] .card {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent), 0 20px 60px -40px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+html[data-theme="astronaut"] .topbar-inner {
+  border-radius: 18px;
+}
+
+/* ------------------------------------------------------------
+   Transisi tema
+   ------------------------------------------------------------ */
+
+.theme-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 560;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.theme-wipe {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(90% 80% at 50% 20%, color-mix(in srgb, var(--wipe-a) 22%, transparent), transparent 60%),
+    linear-gradient(160deg, var(--wipe-bg), color-mix(in srgb, var(--wipe-bg) 80%, var(--wipe-a)));
+  clip-path: circle(0 at var(--tx, 50%) var(--ty, 50%));
+  animation: theme-wipe-in .9s var(--ease-out) forwards;
+}
+
+.theme-wipe.out {
+  animation: theme-wipe-out .55s var(--ease-soft) forwards;
+}
+
+@keyframes theme-wipe-in {
+  0% { clip-path: circle(0 at var(--tx, 50%) var(--ty, 50%)); }
+  100% { clip-path: circle(150vmax at var(--tx, 50%) var(--ty, 50%)); }
+}
+
+@keyframes theme-wipe-out {
+  to { opacity: 0; }
+}
+
+.theme-burst {
+  position: absolute;
+  left: var(--tx, 50%);
+  top: var(--ty, 50%);
+  width: 0;
+  height: 0;
+}
+
+.theme-burst i {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin: -21px;
+  color: var(--wipe-a);
+  opacity: 0;
+  animation: burst-fly .85s var(--ease-out) forwards;
+  animation-delay: var(--delay, 0s);
+  font-size: 20px;
+}
+
+@keyframes burst-fly {
+  0% { opacity: 0; transform: translate(0, 0) scale(.3) rotate(0); }
+  18% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.05) rotate(var(--rot, 120deg)); }
+}

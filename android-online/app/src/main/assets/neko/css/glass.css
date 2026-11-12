@@ -1,0 +1,361 @@
+/* ============================================================
+   NEKO · glass.css — LAPISAN KACA (dimuat paling terakhir)
+   Permintaan: kaca yang JERNIH di seluruh aplikasi dan transisi
+   yang MULUS, bukan kotak buram tebal.
+
+   Tiga lapis material (iPhone iOS 26 "liquid glass"):
+     1. GLASS      → panel, kartu, sheet, dialog, batang, kolom isian.
+                     tembus pandang + blur latar di belakangnya.
+     2. SOFT GLASS → chip, tombol, baris daftar, tab, lencana.
+                     blur ringan; cukup bening untuk terlihat kaca,
+                     cukup pekat untuk teks kecil.
+     3. SOLID      → ubin permainan (memory, 2048, OS I, subnet, Simon,
+                     kabel, port) yang berubah cepat: TIDAK diburamkan
+                     supaya tetap tajam dan hemat tenaga.
+
+   Warna kaca tidak ditulis ulang per tema: tiap dunia sudah punya
+   --surface-solid / --surface-2-solid, jadi cukup porsi warnanya
+   (--glass-tint) yang diatur di sini. Ganti satu angka, semua dunia
+   (Default, Hutan, Ocean, Candy, Merah, Car, Astronot, Paper) ikut.
+
+   CATATAN: paper.css dan themes.css menimpa permukaan dengan pola
+   html[data-theme="paper"] .card (0,2,1). Supaya dunia tidak melawan
+   kaca, semua aturan di sini dibungkus html[data-theme][data-mode] :is(...)
+   yang juga bernilai (0,2,1) dan dimuat paling terakhir.
+   ============================================================ */
+
+/* ---------------- 1. Token kaca ---------------- */
+
+html[data-theme][data-mode] {
+  --glass-tint: 46%;              /* porsi warna permukaan di dalam kaca (mode gelap) */
+  --glass-tint-2: 40%;
+  --glass-tint-soft: 62%;         /* kontrol kecil butuh lebih banyak isi */
+  --glass-blur: blur(28px) saturate(185%) brightness(1.06);
+  --glass-blur-soft: blur(14px) saturate(165%) brightness(1.04);
+  --glass-edge: color-mix(in srgb, var(--ink) 15%, transparent);
+  --glass-edge-strong: color-mix(in srgb, var(--ink) 26%, transparent);
+  --glass-spec: linear-gradient(168deg,
+      rgba(255, 255, 255, .17) 0%,
+      rgba(255, 255, 255, .05) 34%,
+      rgba(255, 255, 255, 0) 58%);
+  --glass-shadow: 0 22px 46px -26px rgba(0, 0, 0, .58),
+                  inset 0 1px 0 rgba(255, 255, 255, .14),
+                  inset 0 -1px 0 rgba(0, 0, 0, .18);
+  --glass-wash: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0));
+  --glass-radius: 20px;
+
+  --surface: color-mix(in srgb, var(--surface-solid) var(--glass-tint), transparent);
+  --surface-2: color-mix(in srgb, var(--surface-2-solid) var(--glass-tint-2), transparent);
+  --surface-glass: var(--surface);
+  --surface-2-glass: var(--surface-2);
+  --surface-soft: color-mix(in srgb, var(--surface-solid) var(--glass-tint-soft), transparent);
+  --surface-2-soft: color-mix(in srgb, var(--surface-2-solid) var(--glass-tint-soft), transparent);
+}
+
+html[data-theme][data-mode="light"] {
+  --glass-tint: 66%;
+  --glass-tint-2: 60%;
+  --glass-tint-soft: 78%;
+  --glass-blur: blur(30px) saturate(160%) brightness(1.03);
+  --glass-edge: color-mix(in srgb, var(--ink) 13%, transparent);
+  --glass-spec: linear-gradient(168deg,
+      rgba(255, 255, 255, .62) 0%,
+      rgba(255, 255, 255, .22) 34%,
+      rgba(255, 255, 255, 0) 58%);
+  /* Latar terang (putih/pastel) bikin kaca putih hilang batasnya, jadi
+     sedikit warna tinta teks dicampur ke dalam kaca mode terang. */
+  --glass-wash: linear-gradient(168deg,
+      color-mix(in srgb, var(--ink) 9%, transparent),
+      color-mix(in srgb, var(--ink) 5%, transparent));
+  --glass-shadow: 0 20px 42px -28px rgba(24, 52, 96, .38),
+                  inset 0 1px 0 rgba(255, 255, 255, .72),
+                  inset 0 -1px 0 rgba(30, 60, 100, .08);
+}
+
+/* ---------------- 2. Material GLASS (lapis besar) ---------------- */
+
+html[data-theme][data-mode] :is(
+.card,
+.sheet,
+.dialog,
+.toast,
+.dock,
+.topbar-inner,
+.side-brand,
+.settings-panel,
+.g-panel,
+.room-shell,
+.room-pod,
+.room-card,
+.auth-tabs,
+.chat-tabs,
+.profile-tabs,
+.msg-composer,
+.msg-convo,
+.quick-card,
+.guide-card,
+.game-card,
+.kontak-card,
+.checkin-card,
+.community-feed,
+.community-info,
+.community-note,
+.home-continue,
+.home-stat,
+.profile-section,
+.profile-hero,
+.profile-about,
+.profile-news,
+.admin-ann,
+.admin-stat,
+.empty-state,
+.setup-players,
+.live-choose-card,
+.live-my-card,
+.live-explain,
+.live-rest,
+.live-note,
+.spy-vote-card,
+.spy-choice-card,
+.spy-character-modal,
+.rank-row,
+.notif-item,
+.library-stat,
+.book-search,
+.book-filter,
+.msg-search,
+input,
+select,
+textarea,
+.type-input,
+.live-pin-input,
+.stepper,
+.segmented) {
+  background:
+    var(--glass-spec),
+    var(--glass-wash),
+    linear-gradient(168deg,
+      color-mix(in srgb, var(--surface-solid) var(--glass-tint), transparent),
+      color-mix(in srgb, var(--surface-2-solid) var(--glass-tint-2), transparent));
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Kartu lama memakai gradien SOLID (components.css .card) — di sini
+   diganti kaca; garis tepinya ikut dilunakkan. */
+html[data-theme][data-mode] .card {
+  border-radius: var(--glass-radius);
+}
+
+/* ---------------- 3. Material SOFT GLASS (kontrol kecil) ---------------- */
+
+html[data-theme][data-mode] :is(
+.btn,
+.btn-soft,
+.btn-ghost,
+.btn-danger,
+.chip,
+.pill,
+.pill-accent,
+.world-pill,
+.mood-chip,
+.wire-chip,
+.osi-chip,
+.g-player-chip,
+.live-player-chip,
+.live-chips,
+.live-answered-pill,
+.room-wait-chip,
+.msg-out-chip,
+.cine-go-chips,
+.chat-quick button,
+.chat-actions,
+.chat-suggest,
+.theme-card,
+.mode-card,
+.car-color,
+.char-slot,
+.character-card,
+.badge-tile,
+.top-action,
+.top-user,
+.side-link,
+.road-step,
+.season-node,
+.pin-toggle,
+.stepper button,
+.segmented button,
+.setup-choice button,
+.game-hud-pill,
+.game-exit,
+.room-seg-btn,
+.g-answer,
+.live-answer,
+.chat-bubble,
+.msg-bubble,
+.rank-num,
+.checkin-ic,
+.home-stat-ic,
+.dialog-ic,
+.card-icon,
+.card-arrow) {
+  -webkit-backdrop-filter: var(--glass-blur-soft);
+  backdrop-filter: var(--glass-blur-soft);
+  border-color: var(--glass-edge);
+}
+
+/* Kontrol yang sebelumnya memakai permukaan pekat dibuat sedikit lebih
+   bening, tapi tetap di atas ambang baca untuk teks 12–14 px. */
+html[data-theme][data-mode] :is(
+.chip,
+.pill,
+.pill-accent,
+.world-pill,
+.mood-chip,
+.btn-soft,
+.btn-ghost,
+.game-hud-pill,
+.room-wait-chip,
+.msg-out-chip,
+.live-answered-pill) {
+  background:
+    var(--glass-wash),
+    color-mix(in srgb, var(--surface-solid) var(--glass-tint-soft), transparent);
+}
+
+/* ---------------- 4. Material SOLID (ubin permainan) ---------------- */
+
+html[data-theme][data-mode] :is(
+.mem-face,
+.merge-tile,
+.osi-slot,
+.simon-pad,
+.simon-led,
+.cable-slot,
+.port-hole,
+.port-jack,
+.subnet-cell,
+.arena-orbit-dot,
+.reaction-pad,
+.gbp-bubble,
+.spy-face) {
+  background: linear-gradient(168deg,
+    var(--surface-solid),
+    color-mix(in srgb, var(--surface-2-solid) 88%, var(--surface-solid)));
+  border: 1px solid var(--glass-edge);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* ---------------- 5. Mulus: transisi & gerak ---------------- */
+
+html[data-theme][data-mode] :is(
+.card,
+.btn,
+.chip,
+.pill,
+.theme-card,
+.mode-card,
+.dock-btn,
+.side-link,
+.sheet,
+.dialog,
+.toast,
+input,
+select,
+textarea) {
+  transition:
+    transform .26s cubic-bezier(.22, 1, .36, 1),
+    box-shadow .26s cubic-bezier(.22, 1, .36, 1),
+    border-color .2s ease,
+    background-color .2s ease,
+    color .18s ease,
+    opacity .22s ease;
+}
+
+html[data-theme][data-mode] :is(.btn, .chip, .dock-btn, .theme-card, .mode-card):active {
+  transform: scale(.972);
+}
+
+/* Kaca tidak boleh berkedip saat halaman berpindah. */
+html[data-theme][data-mode] :is(.view, .view-root) {
+  animation: neko-glass-in .34s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+@keyframes neko-glass-in {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------------- 6. Jalan cadangan ---------------- */
+
+/* Perangkat tanpa backdrop-filter (WebView lama) tidak boleh menampilkan
+   kaca tembus yang bikin teks tidak terbaca: kaca dikembalikan hampir solid. */
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  html[data-theme][data-mode] {
+    --glass-tint: 97%;
+    --glass-tint-2: 97%;
+    --glass-tint-soft: 97%;
+  }
+  html[data-theme][data-mode] :is(
+  .card, .sheet, .dialog, .toast, .dock, .topbar-inner, input, select, textarea,
+  .g-panel, .settings-panel, .room-shell, .auth-tabs, .chat-tabs, .profile-tabs,
+  .btn, .chip, .pill, .theme-card, .mode-card, .segmented, .stepper) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Pengaturan "reduce transparency" di HP/desktop: kaca jadi pekat,
+   tanpa blur — hemat tenaga dan tetap terbaca. */
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme][data-mode] {
+    --glass-tint: 97%;
+    --glass-tint-2: 97%;
+    --glass-tint-soft: 97%;
+    --glass-blur: none;
+    --glass-blur-soft: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme][data-mode] :is(.view, .view-root) {
+    animation: none;
+  }
+  html[data-theme][data-mode] :is(
+  .card, .btn, .chip, .pill, .theme-card, .mode-card, .dock-btn,
+  .side-link, .sheet, .dialog, .toast, input, select, textarea) {
+    transition-duration: .01ms;
+  }
+}
+
+/* ---------------- Paper theme: liquid glass yang rapi ---------------- */
+/* Tema Paper (perkamen kayu) butuh kaca yang lebih hangat dan tidak
+   terlalu tembus, supaya tekstur perkamen tetap terbaca. */
+html[data-theme="paper"][data-mode] {
+  --glass-tint: 82%;
+  --glass-tint-2: 78%;
+  --glass-tint-soft: 88%;
+  --glass-blur: blur(12px) saturate(135%) brightness(1.02);
+  --glass-blur-soft: blur(8px) saturate(130%) brightness(1.02);
+  --glass-edge: color-mix(in srgb, var(--paper-ink) 18%, transparent);
+  --glass-spec: linear-gradient(168deg,
+      rgba(255, 248, 220, .42) 0%,
+      rgba(255, 248, 220, .12) 34%,
+      rgba(255, 248, 220, 0) 58%);
+}
+html[data-theme="paper"][data-mode] .card {
+  background:
+    radial-gradient(120% 90% at 12% 0%, rgba(255, 250, 235, .55), transparent 55%),
+    repeating-linear-gradient(0deg, rgba(110, 72, 36, .035) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(90deg, rgba(110, 72, 36, .025) 0 1px, transparent 1px 9px),
+    linear-gradient(155deg, color-mix(in srgb, var(--surface) 94%, #fff), color-mix(in srgb, var(--surface-2) 86%, #000 2%));
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+html[data-theme="paper"][data-mode] :is(.sheet, .dialog, .topbar-inner, .sidebar) {
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}

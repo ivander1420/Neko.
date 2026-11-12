@@ -1,0 +1,707 @@
+/* ============================================================
+   NEKO · css/intro.css
+   Intro sinematik saat pertama kali aplikasi dibuka:
+   wordmark, review halaman penting, dan perkenalan Miki,
+   Miko, serta Neksya. Semua ukuran mengikuti lebar & tinggi
+   layar supaya rapi di HP, tablet, maupun desktop.
+   ============================================================ */
+
+.cine {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  background:
+    radial-gradient(120% 78% at 50% 6%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 62%),
+    radial-gradient(100% 70% at 50% 104%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 60%),
+    var(--bg);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  overflow: hidden;
+  animation: cine-in .6s var(--ease-out) both;
+}
+
+.cine.is-leaving {
+  animation: cine-out .68s var(--ease-soft) forwards;
+  pointer-events: none;
+}
+
+@keyframes cine-in {
+  from { opacity: 0; transform: scale(1.07); filter: blur(16px); }
+}
+@keyframes cine-out {
+  to { opacity: 0; transform: scale(1.05); filter: blur(14px); visibility: hidden; }
+}
+
+/* ---------- Latar: aura, berkas cahaya, dan bintang ---------- */
+
+.cine-aura {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cine-aura i {
+  position: absolute;
+  width: clamp(140px, 42vw, 420px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  filter: blur(46px);
+  opacity: .34;
+  background: radial-gradient(circle at 40% 40%, var(--accent), transparent 68%);
+  animation: float-y 9s ease-in-out infinite;
+}
+
+.cine-aura i:nth-child(2) { left: auto; right: -6%; top: 42%; background: radial-gradient(circle at 50% 50%, var(--accent-2), transparent 68%); animation-duration: 11s; animation-delay: -3s; }
+.cine-aura i:nth-child(3) { left: 26%; bottom: -12%; background: radial-gradient(circle at 50% 50%, var(--accent-3, var(--warn)), transparent 70%); animation-duration: 13s; animation-delay: -6s; opacity: .26; }
+.cine-aura i:nth-child(1) { left: -8%; top: 10%; }
+
+.cine-sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .5;
+}
+
+.cine-sparks b {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: twinkle 3.4s ease-in-out infinite;
+}
+
+.cine-beam {
+  position: absolute;
+  inset: -20% -60%;
+  pointer-events: none;
+  background: linear-gradient(103deg, transparent 38%, color-mix(in srgb, #fff 12%, transparent) 48%, transparent 58%);
+  animation: cine-beam-move 4.4s var(--ease-soft) 1;
+}
+
+@keyframes cine-beam-move {
+  from { transform: translateX(-32%); }
+  to { transform: translateX(32%); }
+}
+
+/* ---------- Karangan: rel progres, lewati, dan suara ---------- */
+
+.cine-rail {
+  position: absolute;
+  top: calc(16px + var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 3;
+}
+
+.cine-rail i {
+  width: 22px;
+  height: 3px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  transition: background .35s var(--ease-soft), width .35s var(--ease-spring);
+}
+
+.cine-rail i.on {
+  width: 34px;
+  background: var(--accent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.cine-skip,
+.cine-voice {
+  position: absolute;
+  top: calc(10px + var(--safe-top));
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: var(--surface-glass);
+  color: var(--ink-2);
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .2s var(--ease-spring), border-color .2s, color .2s;;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur)
+}
+
+.cine-skip { right: calc(12px + var(--safe-right, 0px)); }
+.cine-voice { left: calc(12px + var(--safe-left, 0px)); padding: 8px 10px; }
+.cine-skip:hover, .cine-voice:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); color: var(--ink); }
+.cine-voice[aria-pressed="false"] { color: var(--muted); }
+.cine-skip .ic, .cine-voice .ic { width: 14px; height: 14px; --sw: 2.45; }
+
+/* ---------- Panggung ---------- */
+
+.cine-stage {
+  position: relative;
+  z-index: 2;
+  min-height: 0;
+}
+
+.cine-scene {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  justify-items: center;
+  gap: clamp(10px, 2.4vh, 22px);
+  padding: clamp(46px, 9vh, 84px) clamp(16px, 5vw, 54px) clamp(12px, 3vh, 30px);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(.97);
+  transition: opacity .4s var(--ease-soft), transform .5s var(--ease-spring);
+}
+
+.cine-scene.on {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+/* ---------- Babak 1: wordmark ---------- */
+
+.cine-mark {
+  position: relative;
+  width: clamp(84px, 21vw, 132px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  animation: pop-in .8s var(--ease-spring) both;
+}
+
+.cine-mark::before,
+.cine-mark::after {
+  content: "";
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 42%, transparent);
+  animation: ring-pulse 2.6s var(--ease-soft) infinite;
+}
+
+.cine-mark::after { animation-delay: .9s; opacity: .5; }
+.cine-mark .logo-mask { width: 68%; height: 68%; animation: logo-breathe 3.2s var(--ease-soft) infinite; }
+
+.cine-word {
+  display: flex;
+  align-items: baseline;
+  gap: .015em;
+  font-family: var(--font-display);
+  font-size: clamp(46px, 13vw, 104px);
+  font-weight: 800;
+  letter-spacing: -.055em;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.cine-word span {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(.34em) rotate(-7deg) scale(.86);
+  animation: cine-letter .72s var(--ease-spring) forwards;
+  animation-delay: calc(var(--d, 0) * 1ms);
+  text-shadow: 0 12px 34px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+@keyframes cine-letter {
+  to { opacity: 1; transform: none; }
+}
+
+.cine-tag {
+  font-family: var(--font-display);
+  font-size: clamp(13px, 3.6vw, 17px);
+  font-weight: 700;
+  color: var(--accent);
+  opacity: 0;
+  animation: fade-up .6s var(--ease-out) 620ms forwards;
+}
+
+.cine-by {
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 2.4vw, 11px);
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0;
+  animation: fade-up .6s var(--ease-out) 880ms forwards;
+}
+
+/* ---------- Babak 2: review halaman ---------- */
+
+.cine-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(146px, 1fr));
+  gap: clamp(7px, 1.5vw, 13px);
+  width: min(860px, 100%);
+}
+
+.cine-tile {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  padding: clamp(9px, 1.4vh, 13px) clamp(10px, 1.6vw, 14px);
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--surface-glass);
+  color: var(--ink-2);
+  text-align: left;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(18px) scale(.94);
+  animation: cine-tile-in .58s var(--ease-spring) forwards;
+  animation-delay: calc(var(--d, 0) * 1ms);
+  transition: border-color .3s, box-shadow .3s, transform .3s var(--ease-spring), background .3s;;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur)
+}
+
+@keyframes cine-tile-in {
+  to { opacity: 1; transform: none; }
+}
+
+.cine-tile:hover { transform: translateY(-3px); }
+
+.cine-tile.hot {
+  border-color: color-mix(in srgb, var(--tc, var(--accent)) 62%, transparent);
+  background: color-mix(in srgb, var(--tc, var(--accent)) 12%, var(--surface));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tc, var(--accent)) 20%, transparent), 0 20px 38px -26px color-mix(in srgb, var(--tc, var(--accent)) 80%, transparent);
+}
+
+.cine-tile-ic {
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  color: var(--tc, var(--accent));
+  background: color-mix(in srgb, var(--tc, var(--accent)) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tc, var(--accent)) 26%, transparent);
+}
+
+.cine-tile-ic .ic { width: 20px; height: 20px; --sw: 2.05; }
+.cine-tile b { display: block; font-family: var(--font-display); font-size: 12.5px; line-height: 1.15; color: var(--ink); }
+.cine-tile small { display: block; font-size: 9.8px; line-height: 1.35; color: var(--muted); margin-top: 2px; }
+.cine-tiles-head { font-family: var(--font-mono); font-size: 10px; letter-spacing: .26em; text-transform: uppercase; color: var(--muted); }
+
+/* ---------- Babak 3: Miki, Miko, Neksya ---------- */
+
+.cine-cats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(9px, 2.4vw, 22px);
+  width: min(760px, 100%);
+}
+
+.cine-cat {
+  flex: 1 1 168px;
+  max-width: 216px;
+  min-width: 140px;
+  padding: clamp(11px, 1.8vh, 16px) 12px;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--cc, var(--accent)) 30%, var(--line));
+  background: var(--surface-glass);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(26px) scale(.88);
+  animation: cine-cat-in .72s var(--ease-bounce) forwards;
+  animation-delay: calc(var(--d, 0) * 1ms);
+  transition: border-color .3s, box-shadow .3s, transform .35s var(--ease-spring);;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur)
+}
+
+@keyframes cine-cat-in {
+  to { opacity: 1; transform: none; }
+}
+
+.cine-cat.hot {
+  border-color: var(--cc, var(--accent));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cc, var(--accent)) 22%, transparent), 0 22px 44px -28px color-mix(in srgb, var(--cc, var(--accent)) 85%, transparent);
+  transform: translateY(-4px);
+}
+
+.cine-cat .mascot-svg {
+  width: clamp(70px, 17vw, 112px);
+  height: auto;
+  animation: mascot-bob 3.6s ease-in-out infinite;
+}
+
+.cine-cat.hot .mascot-svg { animation: mascot-react-pop .5s var(--ease-bounce) both, mascot-bob 3.6s ease-in-out .5s infinite; }
+.cine-cat b { display: block; font-family: var(--font-display); font-size: 13.5px; color: var(--ink); margin-top: 4px; }
+.cine-cat i { display: block; font-style: normal; font-family: var(--font-mono); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--cc, var(--accent)); }
+.cine-cat small { display: block; font-size: 9.8px; line-height: 1.4; color: var(--muted); margin-top: 5px; }
+
+/* ---------- Babak 4: masuk ---------- */
+
+.cine-go {
+  display: grid;
+  justify-items: center;
+  gap: clamp(10px, 2.2vh, 18px);
+  text-align: center;
+}
+
+.cine-go-title {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 5.6vw, 34px);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  color: var(--ink);
+}
+
+.cine-go-sub { font-size: clamp(11px, 3vw, 13px); color: var(--muted); max-width: 46ch; }
+
+.cine-go-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 26px;
+  border-radius: 99px;
+  border: 0;
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  color: var(--accent-ink);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .01em;
+  cursor: pointer;
+  box-shadow: 0 20px 44px -22px color-mix(in srgb, var(--accent) 85%, transparent);
+  animation: cine-go-pulse 2.4s var(--ease-soft) infinite;
+  transition: transform .22s var(--ease-spring);
+}
+
+.cine-go-btn:hover { transform: translateY(-2px) scale(1.02); }
+.cine-go-btn:active { transform: scale(.97); }
+.cine-go-btn .ic { width: 18px; height: 18px; --sw: 2.15; }
+
+@keyframes cine-go-pulse {
+  0%, 100% { box-shadow: 0 20px 44px -22px color-mix(in srgb, var(--accent) 85%, transparent), 0 0 0 0 color-mix(in srgb, var(--accent) 30%, transparent); }
+  50% { box-shadow: 0 22px 48px -20px color-mix(in srgb, var(--accent) 90%, transparent), 0 0 0 12px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+
+.cine-go-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.cine-go-chips span { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 99px; border: 1px solid var(--line); font-size: 10px; color: var(--ink-2); background: var(--surface-solid); }
+.cine-go-chips .ic { width: 12px; height: 12px; --sw: 2.6; }
+
+/* ---------- Keterangan (dibacakan) ---------- */
+
+.cine-caption {
+  grid-row: 2;
+  position: relative;
+  z-index: 3;
+  margin: 0;
+  padding: 10px clamp(18px, 6vw, 60px) calc(18px + var(--safe-bottom));
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.cine-caption span {
+  font-size: clamp(11.5px, 3.1vw, 14px);
+  line-height: 1.5;
+  color: var(--ink-2);
+  max-width: 62ch;
+  animation: fade-up .4s var(--ease-out) both;
+}
+
+.cine-caption span::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 1em;
+  margin-left: 5px;
+  vertical-align: -.14em;
+  background: var(--accent);
+  opacity: .7;
+  animation: live-caret 1s steps(2) infinite;
+}
+
+/* ---------- Layar sempit & pendek ---------- */
+
+@media (max-width: 420px) {
+  .cine-scene { padding-inline: 14px; }
+  .cine-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cine-cat { flex-basis: 130px; }
+}
+
+@media (max-width: 300px) {
+  .cine-tiles { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 900px) {
+  .cine-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-height: 620px) {
+  .cine-mark { width: clamp(62px, 14vh, 88px); }
+  .cine-word { font-size: clamp(38px, 11vh, 62px); }
+  .cine-scene { gap: clamp(7px, 1.6vh, 14px); padding-block: clamp(38px, 8vh, 56px) clamp(6px, 1.6vh, 14px); }
+  .cine-cat .mascot-svg { width: clamp(54px, 12vh, 78px); }
+  .cine-caption { min-height: 40px; padding-block: 6px calc(10px + var(--safe-bottom)); }
+}
+
+@media (max-height: 460px) {
+  .cine-by,
+  .cine-go-chips,
+  .cine-cat small { display: none; }
+}
+
+/* ---------- Tanpa animasi ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .cine *,
+  .cine *::before,
+  .cine *::after { animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+}
+
+html[data-motion="off"] .cine *,
+html[data-motion="off"] .cine *::before,
+html[data-motion="off"] .cine *::after { animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+
+/* Kunci gulir saat intro tampil */
+html.cine-open,
+html.cine-open body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* ============================================================
+   NEKO · LIQUID GLASS NAVIGATION
+   Tombol Kembali & Selanjutnya
+============================================================ */
+
+.cine-controls {
+  position: absolute;
+  z-index: 20;
+  left: 50%;
+  bottom: calc(68px + var(--safe-bottom));
+  transform: translateX(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+
+  width: max-content;
+  max-width: calc(100% - 28px);
+}
+
+/* Dasar tombol */
+.cine-controls button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  min-width: 124px;
+  height: 46px;
+  padding: 0 21px;
+
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 15px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.19),
+      rgba(255,255,255,.055) 55%,
+      rgba(255,255,255,.12)
+    );
+
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: .025em;
+
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.38),
+    inset 0 -1px 1px rgba(255,255,255,.08),
+    0 8px 24px rgba(0,0,0,.10);
+
+  cursor: pointer;
+
+  transition:
+    transform .28s var(--ease-spring),
+    background .28s ease,
+    border-color .28s ease,
+    box-shadow .28s ease;
+}
+
+/* Pantulan cahaya */
+.cine-controls button::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(
+    115deg,
+    transparent 15%,
+    rgba(255,255,255,.2) 48%,
+    transparent 75%
+  );
+
+  transform: translateX(-120%);
+  transition: transform .7s ease;
+}
+
+.cine-controls button:hover::before {
+  transform: translateX(120%);
+}
+
+/* Kilau bagian atas */
+.cine-controls button::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 12%;
+  width: 76%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,.65),
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* Hover */
+.cine-controls button:hover {
+  transform: translateY(-3px);
+
+  border-color: color-mix(
+    in srgb,
+    var(--accent) 48%,
+    rgba(255,255,255,.4)
+  );
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.26),
+      rgba(255,255,255,.09)
+    );
+
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.45),
+    0 12px 30px rgba(0,0,0,.13),
+    0 0 20px color-mix(
+      in srgb,
+      var(--accent) 16%,
+      transparent
+    );
+}
+
+.cine-controls button:active {
+  transform: scale(.96);
+}
+
+/* Tombol kembali */
+.cine-controls .cine-back {
+  min-width: 108px;
+  background: rgba(255,255,255,.055);
+  color: var(--ink-2);
+}
+
+/* Tombol selanjutnya */
+.cine-controls .cine-next {
+  min-width: 132px;
+  border-color: color-mix(
+    in srgb,
+    var(--accent) 40%,
+    rgba(255,255,255,.35)
+  );
+
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 24%, transparent),
+      rgba(255,255,255,.12)
+    );
+
+  color: var(--ink);
+}
+
+/* Tombol nonaktif */
+.cine-controls button:disabled {
+  opacity: .32;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Indikator halaman */
+.cine-step {
+  padding: 0 3px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  white-space: nowrap;
+}
+
+/* Fokus keyboard */
+.cine-controls button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* Tampilan HP */
+@media (max-width: 480px) {
+  .cine-controls {
+    bottom: calc(64px + var(--safe-bottom));
+    gap: 8px;
+  }
+
+  .cine-controls button {
+    min-width: 100px;
+    height: 43px;
+    padding: 0 14px;
+    border-radius: 13px;
+    font-size: 11px;
+  }
+
+  .cine-controls .cine-next {
+    min-width: 116px;
+  }
+
+  .cine-step {
+    font-size: 9px;
+  }
+}
+
+/* Layar pendek */
+@media (max-height: 460px) {
+  .cine-controls {
+    bottom: calc(42px + var(--safe-bottom));
+  }
+
+  .cine-controls button {
+    height: 38px;
+  }
+}

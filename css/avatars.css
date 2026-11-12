@@ -1,0 +1,152 @@
+/* ============================================================
+   NEKO — Pack karakter (js/avatars.js)
+   Diatur lewat custom property yang diwarisi ke dalam <use>,
+   jadi satu simbol dipakai bersama oleh semua ekspresi.
+   ============================================================ */
+
+.avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  flex: none;
+}
+
+/* Ukuran cadangan kalau pemanggil tidak memberi kelas khusus. */
+.avatar:not([class*="-svg"]):not([style*="width"]) { max-width: 100%; }
+
+/* Napang kecil pada seluruh figur — aman karena animasi menempel di
+   elemen <svg> di light DOM, bukan di dalam shadow tree <use>. */
+.avatar { animation: neko-breathe 3.6s ease-in-out infinite; transform-origin: 50% 92%; }
+
+@keyframes neko-breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-1.5px) scale(1.014); }
+}
+
+.avatar.is-still,
+.avatar--still { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar { animation: none; }
+}
+
+/* Grid pemilih karakter: satu kartu per pemain. */
+.char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+}
+
+.char-slot {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  align-content: start;
+  padding: 10px 8px;
+  border-radius: 16px;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  background: var(--surface);
+  cursor: pointer;
+  text-align: center;
+  transition: transform .16s var(--ease-out, ease), border-color .16s ease, box-shadow .16s ease;
+}
+
+.char-slot:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+
+.char-slot.is-picked {
+  border-color: var(--accent);
+  box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--accent) 85%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.char-slot .char-face {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2, var(--surface)));
+}
+
+.char-slot .char-name {
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.char-slot .char-owner {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warn, #e0a13c) 26%, var(--surface));
+  color: var(--ink);
+}
+
+.char-slot.is-taken { cursor: not-allowed; opacity: .48; }
+.char-slot.is-taken:hover { transform: none; border-color: color-mix(in srgb, var(--accent) 22%, var(--line)); }
+
+.char-slot .char-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--accent-ink, #fff);
+  background: var(--accent);
+  opacity: 0;
+  transform: scale(.6);
+  transition: opacity .14s ease, transform .14s var(--ease-out, ease);
+}
+
+.char-slot.is-picked .char-check { opacity: 1; transform: scale(1); }
+
+/* Baris pilihan ekspresi di bawah kartu karakter. */
+.mood-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.mood-chip {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.mood-chip[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink, #fff);
+}
+
+.sheet-group-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 2px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sheet-group-label .ic { width: 15px; height: 15px; }

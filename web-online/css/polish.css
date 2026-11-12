@@ -1,0 +1,667 @@
+/* ============================================================
+   NEKO · polish.css
+   Lapisan akhir: liquid glass, sidebar collapsible, kursor,
+   ripple tekan, scrollbar tema, dan transisi layar.
+   Dimuat sebelum paper.css agar tema tetap menjadi prioritas.
+   ============================================================ */
+
+/* ---------------- Scroll mulus ---------------- */
+
+html,
+body {
+  overscroll-behavior-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.view-root,
+.app-main,
+.view,
+.view > *,
+.material-body,
+.reader-body,
+.mascot-messages,
+.sheet-body,
+.dialog,
+.settings-panel {
+  touch-action: pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Smooth-scroll hanya untuk navigasi programatik, bukan wheel/trackpad */
+html {
+  scroll-behavior: auto;
+}
+
+/* Scrollbar tipis yang tetap terlihat dan mengikuti tema */
+html,
+body,
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 45%, transparent) transparent;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+  height: 8px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--surface) 30%, transparent);
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  border-radius: 99px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent) 72%, transparent),
+    color-mix(in srgb, var(--accent-2) 72%, transparent));
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  background-clip: padding-box;
+}
+
+/* ---------------- Liquid glass dasar ---------------- */
+
+.topbar-inner {
+  position: relative;
+  border-color: color-mix(in srgb, var(--accent) 16%, var(--line));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 10%, transparent), transparent 46%),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 58%),
+    var(--surface-glass);
+  
+  
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 20%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--accent) 12%, transparent),
+    0 18px 44px -26px color-mix(in srgb, var(--accent) 55%, transparent);;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur)
+}
+
+.topbar-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(120% 90% at 18% -20%, color-mix(in srgb, #fff 18%, transparent), transparent 55%);
+  opacity: .7;
+}
+
+.dock {
+  border-radius: 30px;
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--line));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 12%, transparent), transparent 42%),
+    linear-gradient(115deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 46%, color-mix(in srgb, var(--accent-2) 9%, transparent)),
+    var(--surface-glass);
+  
+  
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 24%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--accent) 14%, transparent),
+    0 26px 60px -26px rgba(0, 0, 0, .7),
+    0 0 0 1px color-mix(in srgb, #fff 5%, transparent);;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur)
+}
+
+html:not([data-theme="paper"]) .dock::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(80% 60% at 22% 0%, color-mix(in srgb, #fff 22%, transparent), transparent 60%),
+    radial-gradient(60% 70% at 82% 110%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 62%);
+  opacity: .8;
+}
+
+.dock-btn {
+  z-index: 1;
+  border-radius: 22px;
+}
+
+.dock-btn:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.dock-btn.on {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 10%, transparent), transparent),
+    color-mix(in srgb, var(--accent) 16%, var(--surface-3));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 16%, transparent);
+}
+
+.dock-btn.on .dock-ic {
+  filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--accent) 65%, transparent));
+}
+
+.sheet,
+.dialog,
+.theme-card,
+.toast {
+  backdrop-filter: blur(30px) saturate(165%);
+  -webkit-backdrop-filter: blur(30px) saturate(165%);
+  border-color: color-mix(in srgb, var(--accent) 15%, var(--line));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 14%, transparent),
+    var(--shadow);
+}
+
+.sheet {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 6%, transparent), transparent 38%),
+    var(--surface-solid);
+}
+
+.sidebar {
+  backdrop-filter: blur(34px) saturate(160%);
+  -webkit-backdrop-filter: blur(34px) saturate(160%);
+  transition: width .32s var(--ease-out), padding .32s var(--ease-out), background .3s;
+}
+
+/* ---------------- Sidebar collapsible ---------------- */
+
+.side-collapse {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface-3) 70%, transparent);
+  transition: transform .28s var(--ease-spring), color .2s, background .2s;
+}
+
+.side-collapse .ic {
+  width: 16px;
+  height: 16px; --sw: 2.3;}
+
+.side-collapse:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-3));
+}
+
+.side-collapse:active {
+  transform: scale(.9);
+}
+
+html[data-sidebar="collapsed"] .side-collapse {
+  transform: rotate(180deg);
+}
+
+html[data-sidebar="collapsed"] .side-link span,
+html[data-sidebar="collapsed"] .side-brand-name,
+html[data-sidebar="collapsed"] .side-season,
+html[data-sidebar="collapsed"] .side-foot {
+  display: none;
+}
+
+html[data-sidebar="collapsed"] .side-link {
+  justify-content: center;
+  padding: 12px 0;
+  gap: 0;
+}
+
+html[data-sidebar="collapsed"] .side-link .ic {
+  width: 20px;
+  height: 20px; --sw: 2.05;}
+
+html[data-sidebar="collapsed"] .side-link.on {
+  box-shadow: none;
+}
+
+@media (min-width: 1024px) {
+  html[data-sidebar="collapsed"] .sidebar {
+    width: 82px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  html[data-sidebar="collapsed"] .app-main {
+    margin-left: 82px;
+  }
+
+  html[data-sidebar="collapsed"] .side-brand {
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 0 12px;
+  }
+
+  html[data-sidebar="collapsed"] .side-brand-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 11px;
+    padding: 6px;
+  }
+
+  html[data-sidebar="collapsed"] .side-collapse {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+  }
+
+  html[data-sidebar="collapsed"] .side-brand {
+    position: relative;
+  }
+
+  html[data-sidebar="collapsed"] .side-brand::before {
+    content: "Buka sidebar";
+    position: absolute;
+    left: 100%;
+    margin-left: 14px;
+    padding: 4px 9px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s;
+    white-space: nowrap;
+  }
+
+  html[data-sidebar="collapsed"] .side-brand:hover::before {
+    opacity: 1;
+  }
+}
+
+/* ---------------- Ikon mengikuti tema ---------------- */
+
+.dock-btn .ic {
+  color: color-mix(in srgb, var(--accent) 72%, var(--muted));
+  transition: color .2s, transform .25s var(--ease-spring), filter .2s;
+}
+
+.dock-btn.on .ic {
+  color: var(--accent);
+}
+
+.top-action .ic {
+  color: color-mix(in srgb, var(--accent) 78%, var(--ink));
+}
+
+.top-action:hover .ic {
+  color: var(--accent);
+}
+
+.side-link .ic {
+  color: color-mix(in srgb, var(--accent) 62%, var(--muted));
+  transition: color .2s, transform .25s var(--ease-spring);
+}
+
+.side-link:hover .ic,
+.side-link.on .ic {
+  color: var(--accent);
+}
+
+.setting-ic {
+  color: var(--accent);
+}
+
+.page-head .ic,
+.section-head .ic {
+  color: var(--accent);
+}
+
+/* ---------------- Tekan yang memuaskan ---------------- */
+
+.btn,
+.top-action,
+.top-user,
+.side-link,
+.dock-btn,
+.chip,
+.game-card,
+.material-card,
+.book-card,
+.theme-card,
+.car-color,
+.switch,
+.segmented button {
+  position: relative;
+  isolation: isolate;
+}
+
+.btn,
+.chip,
+.game-card,
+.material-card,
+.book-card,
+.theme-card {
+  overflow: hidden;
+}
+
+.btn:not(:disabled):active,
+.chip:not(:disabled):active,
+.game-card:active,
+.material-card:active,
+.book-card:active,
+.theme-card:active {
+  transform: translateY(1px) scale(.975);
+}
+
+.top-action:active,
+.top-user:active {
+  transform: scale(.92);
+}
+
+.side-link:active {
+  transform: scale(.97);
+}
+
+.fx-ripple-host {
+  position: relative;
+  overflow: hidden;
+}
+
+.fx-ripple {
+  position: absolute;
+  z-index: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 42%, transparent) 0%, color-mix(in srgb, var(--accent) 18%, transparent) 42%, transparent 70%);
+  transform: scale(0);
+  opacity: .9;
+  animation: fx-ripple-out .62s var(--ease-out) forwards;
+}
+
+@keyframes fx-ripple-out {
+  to { transform: scale(1); opacity: 0; }
+}
+
+/* ---------------- Kursor hidup ---------------- */
+
+.fx-cursor-dot,
+.fx-cursor-ring {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+}
+
+.fx-cursor-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 90%, transparent);
+  transition: opacity .18s, background .2s, box-shadow .2s;
+}
+
+.fx-cursor-ring {
+  z-index: 9997;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  box-shadow: 0 0 26px -6px color-mix(in srgb, var(--accent) 70%, transparent);
+  transition: opacity .24s, width .2s var(--ease-out), height .2s var(--ease-out), background .2s, border-color .2s;
+}
+
+.fx-cursor-dot.is-visible,
+.fx-cursor-ring.is-visible {
+  opacity: 1;
+}
+
+.fx-cursor-ring.is-hot {
+  width: 48px;
+  height: 48px;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.fx-cursor-ring.is-down {
+  width: 24px;
+  height: 24px;
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+@media (pointer: fine) and (hover: hover) {
+  }
+
+@media (pointer: coarse), (hover: none) {
+  .fx-cursor-dot,
+  .fx-cursor-ring {
+    display: none;
+  }
+}
+
+/* ---------------- Maskot hidup ---------------- */
+
+.mascot-pet {
+  animation: none !important;
+  translate: var(--wx, 0px) var(--wy, 0px);
+  transition: transform .28s var(--ease-spring), box-shadow .28s, translate .9s var(--ease-out), opacity .3s;
+}
+
+.mascot-pet:hover {
+  transform: translateY(-3px) scale(1.03);
+}
+
+.mascot-pet.is-react {
+  animation: mascot-react-pop .62s var(--ease-bounce) !important;
+}
+
+.mascot-pet.is-swapping .mascot-pet-body {
+  animation: mascot-swap-pop .5s var(--ease-bounce);
+}
+
+.mascot-pet-body {
+  animation: mascot-bob 3.8s ease-in-out infinite;
+  transition: transform .2s, background .3s;
+}
+
+.mascot-pet-body .mascot-svg {
+  transition: opacity .2s, transform .25s var(--ease-spring);
+}
+
+@keyframes mascot-bob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-3px) rotate(1deg); }
+}
+
+@keyframes mascot-react-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.1) rotate(-3deg); }
+  65% { transform: scale(.97) rotate(2deg); }
+  100% { transform: scale(1); }
+}
+
+@keyframes mascot-swap-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(.72) rotate(-8deg); }
+  70% { transform: scale(1.12) rotate(4deg); }
+  100% { transform: scale(1); }
+}
+
+.mascot-bubble {
+  position: fixed;
+  right: 24px;
+  bottom: calc(var(--dock-h) + 104px + var(--safe-bottom));
+  z-index: 521;
+  max-width: min(248px, calc(100vw - 32px));
+  padding: 10px 13px;
+  border-radius: 16px 16px 5px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--line));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 8%, transparent), transparent),
+    var(--surface-glass);
+  
+  
+  box-shadow: 0 20px 46px -24px rgba(0, 0, 0, .7);
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 11.5px;
+  line-height: 1.5;
+  font-weight: 600;
+  text-align: left;
+  appearance: none;
+  -webkit-appearance: none;
+  opacity: 0;
+  transform: translateY(10px) scale(.92);
+  transform-origin: 100% 100%;
+  pointer-events: none;
+  transition: opacity .26s var(--ease-out), transform .32s var(--ease-bounce), box-shadow .2s;;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur)
+}
+
+.mascot-bubble.on {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.mascot-bubble.on:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 24px 50px -22px color-mix(in srgb, var(--accent) 55%, rgba(0, 0, 0, .7));
+}
+
+.mascot-bubble.on:active { transform: translateY(0) scale(.95); }
+
+.mascot-bubble:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.mascot-bubble-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: lowercase;
+  vertical-align: middle;
+}
+
+.mascot-bubble-hint .ic { width: 12px; height: 12px; --sw: 2.6;}
+
+.mascot-bubble b {
+  color: var(--accent);
+}
+
+@media (min-width: 1024px) {
+  .mascot-bubble {
+    right: 24px;
+    bottom: calc(22px + 92px);
+  }
+}
+
+@media (max-width: 760px) {
+  .mascot-bubble {
+    right: 12px;
+    max-width: 210px;
+    font-size: 11px;
+  }
+}
+
+/* ---------------- Transisi layar ---------------- */
+
+.view.on {
+  animation: fx-view-in .42s var(--ease-out) both;
+}
+
+@keyframes fx-view-in {
+  from { opacity: 0; transform: translateY(10px) scale(.996); }
+  to { opacity: 1; transform: none; }
+}
+
+.sheet-foot .btn,
+.dialog-actions .btn {
+  min-height: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .view.on,
+  .mascot-pet,
+  .mascot-pet-body,
+  .mascot-dock,
+  .fx-ripple,
+  .mascot-bubble {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+html[data-motion="off"] .view.on,
+html[data-motion="off"] .mascot-pet-body {
+  animation: none !important;
+}
+
+/* ---------------- Sentuhan jari: target minimal 44px ---------------- */
+
+@media (pointer: coarse) {
+  .btn.btn-sm {
+    min-height: 42px;
+    padding-inline: 14px;
+  }
+
+  .top-action {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    --sw: 2.05;
+  }
+
+  .game-exit {
+    min-height: 44px;
+  }
+
+  .dock-btn {
+    min-height: 46px;
+  }
+
+  .chip,
+  .segmented button,
+  .setup-choice button,
+  .live-chips button {
+    min-height: 40px;
+  }
+
+  .live-answer {
+    min-height: 60px;
+  }
+
+  .world-pill,
+  .season-node,
+  .quick-card,
+  .theme-card {
+    min-height: 46px;
+  }
+}
